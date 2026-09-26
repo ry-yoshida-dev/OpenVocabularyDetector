@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-vocabulary-detector"
+version = "0.0.1"
+authors = [
+  { name = "Ryuto Yoshida" },
+]
+description = "Unified interface for open-vocabulary object detectors (Grounding DINO, YOLO-World, YOLOE, OWL-ViT)."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "pillow",
+    "torch",
+    "torchvision",
+    "transformers>=5.0",
+    "ultralytics>=8.3",
+    "clip @ git+https://github.com/ultralytics/CLIP.git",
+    "geometry @ git+https://github.com/ry-yoshida-dev/Geometry.git",
+]
+
+[project.urls]
+Homepage = "https://github.com/ry-yoshida-dev/OpenVocabularyDetector"
+"Bug Tracker" = "https://github.com/ry-yoshida-dev/OpenVocabularyDetector/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pyyaml", "types-PyYAML", "mypy", "basedpyright", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+open_vocabulary_detector = ["py.typed", "config/*/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+strict = true
+mypy_path = "src"
+untyped_calls_exclude = ["ultralytics"]
+
+[[tool.mypy.overrides]]
+module = ["torchvision.*"]
+ignore_missing_imports = true
+
+[tool.pyright]
+include = ["src"]
+typeCheckingMode = "strict"
+reportUnknownMemberType = false
+reportMissingTypeStubs = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
