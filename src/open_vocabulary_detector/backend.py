@@ -19,7 +19,7 @@ class OVDBackend(StrEnum):
     YOLO_WORLD : str
         YOLO-World through Ultralytics.
     YOLOE : str
-        YOLOE (text and text-visual prompts) through Ultralytics.
+        YOLOE (text and visual queries) through Ultralytics.
     """
 
     GROUNDING_DINO = "grounding_dino"
@@ -30,15 +30,15 @@ class OVDBackend(StrEnum):
     @property
     def supported_prompt_kinds(self) -> frozenset[PromptKind]:
         """
-        Prompt kinds the backend accepts.
+        Query kinds the backend accepts; OWL-ViT and YOLOE also accept both kinds mixed in one prompt.
 
         Returns
         -------
         frozenset[PromptKind]
-            ``TEXT`` for every backend, plus ``TEXT_VISUAL`` for OWL-ViT and YOLOE.
+            ``TEXT`` for every backend, plus ``VISUAL`` for OWL-ViT and YOLOE.
         """
         match self:
             case OVDBackend.OWL_VIT | OVDBackend.YOLOE:
-                return frozenset({PromptKind.TEXT, PromptKind.TEXT_VISUAL})
+                return frozenset({PromptKind.TEXT, PromptKind.VISUAL})
             case OVDBackend.GROUNDING_DINO | OVDBackend.YOLO_WORLD:
                 return frozenset({PromptKind.TEXT})

@@ -1,7 +1,7 @@
-from .class_name import ClassNameEmbeddingCache
-from .visual_reference import VisualReferenceEmbeddingCache
+from .text import TextEmbeddingCache
+from .visual import VisualEmbeddingCache
 
 __all__ = [
-    "ClassNameEmbeddingCache",
-    "VisualReferenceEmbeddingCache",
+    "TextEmbeddingCache",
+    "VisualEmbeddingCache",
 ]

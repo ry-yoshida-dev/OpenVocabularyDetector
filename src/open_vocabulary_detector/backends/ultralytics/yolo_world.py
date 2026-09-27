@@ -14,7 +14,7 @@ class YoloWorldDetector(UltralyticsDetector):
     YOLO-World detector backed by Ultralytics.
 
     The CLIP text encoder is cached by Ultralytics, so switching vocabularies
-    only re-encodes the class names.
+    only re-encodes the text queries.
     """
 
     BACKEND: ClassVar[OVDBackend] = OVDBackend.YOLO_WORLD
@@ -36,4 +36,4 @@ class YoloWorldDetector(UltralyticsDetector):
         return self._model
 
     def _apply_prompt(self, prompt: Prompt) -> None:
-        self._model.set_classes(list(prompt.class_names))
+        self._model.set_classes(list(prompt.query_texts))

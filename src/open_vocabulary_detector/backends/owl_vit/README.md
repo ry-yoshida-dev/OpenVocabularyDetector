@@ -4,10 +4,10 @@
 
 OWL-ViT (v1) through `transformers.OwlViTForObjectDetection` (`OVDBackend.OWL_VIT`).
 
-Classes are queried by their names through the text encoder (at most 16 tokens for v1). In a `TextVisualPrompt`,
-classes shown in reference boxes are queried by image instead: for each box, the patch whose predicted box overlaps
-it best and looks least like background is taken (image-guided detection), and the embeddings of the same class are
-averaged. Text embeddings are cached per class name and reference embeddings per reference.
+Text queries are embedded by the text encoder (at most 16 tokens each for v1). Visual queries are embedded from their
+reference boxes: for each box, the patch whose predicted box overlaps it best and looks least like background is taken
+(image-guided detection), and the embeddings of one visual query are averaged. Both kinds may be mixed in one prompt,
+even within one class. Text embeddings are cached per text query and reference embeddings per reference.
 
 ## Components
 

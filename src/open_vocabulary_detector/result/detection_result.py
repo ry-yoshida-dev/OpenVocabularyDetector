@@ -6,6 +6,7 @@ import numpy as np
 from geometry import BboxCalculator, Box2D, Box2dConverter, Box2DFormat, Boxes2D
 
 from ..array_types import BoolArray, FloatArray, IntArray
+from ..prompt import Prompt
 from .detection import Detection
 from .image_size import ImageSize
 
@@ -15,29 +16,32 @@ class DetectionResult:
     """
     Model-independent detections for one image.
 
+    Each detection keeps the prompt query that matched it; its class is the class of that query,
+    so several queries (e.g. ``"suv"``, ``"taxi"`` and a van reference image) report the same class (``"car"``).
+
     Attributes
     ----------
     boxes : Boxes2D
         Bounding boxes in absolute XYXY pixel coordinates, shape (N, 4).
     confidences : FloatArray
         Confidence of each detection in ``[0, 1]``, shape (N,).
-    class_ids : IntArray
-        Class indices into ``class_names``, shape (N,).
-    class_names : tuple[str, ...]
-        Class names of the prompt; ``class_names[class_id]`` is the label.
+    query_ids : IntArray
+        Matched query of each detection, indexing ``prompt.queries``, shape (N,).
+    prompt : Prompt
+        Prompt whose queries were scored.
     image_size : ImageSize
         Size of the image the boxes refer to.
 
     Raises
     ------
     ValueError
-        If array lengths disagree, boxes are not XYXY, or a class id is out of range.
+        If array lengths disagree, boxes are not XYXY, or a query id is out of range.
     """
 
     boxes: Boxes2D
     confidences: FloatArray
-    class_ids: IntArray
-    class_names: tuple[str, ...]
+    query_ids: IntArray
+    prompt: Prompt
     image_size: ImageSize
 
     def __post_init__(self) -> None:
@@ -46,18 +50,19 @@ class DetectionResult:
         detection_count: int = len(self.boxes)
         if self.confidences.shape != (detection_count,):
             raise ValueError(f"confidences must have shape ({detection_count},). got {self.confidences.shape}")
-        if self.class_ids.shape != (detection_count,):
-            raise ValueError(f"class_ids must have shape ({detection_count},). got {self.class_ids.shape}")
-        if detection_count and (self.class_ids.min() < 0 or self.class_ids.max() >= len(self.class_names)):
-            raise ValueError(f"class_ids must be in [0, {len(self.class_names)}). got {self.class_ids}")
+        if self.query_ids.shape != (detection_count,):
+            raise ValueError(f"query_ids must have shape ({detection_count},). got {self.query_ids.shape}")
+        query_count: int = len(self.prompt.queries)
+        if detection_count and (self.query_ids.min() < 0 or self.query_ids.max() >= query_count):
+            raise ValueError(f"query_ids must be in [0, {query_count}). got {self.query_ids}")
 
     @classmethod
     def from_xyxy(
         cls,
         xyxy: FloatArray,
         confidences: FloatArray,
-        class_ids: IntArray,
-        class_names: tuple[str, ...],
+        query_ids: IntArray,
+        prompt: Prompt,
         image_size: ImageSize,
     ) -> "DetectionResult":
         """
@@ -72,10 +77,10 @@ class DetectionResult:
             Absolute pixel boxes, shape (N, 4).
         confidences : FloatArray
             Confidence of each detection in ``[0, 1]``, shape (N,).
-        class_ids : IntArray
-            Class indices into ``class_names``, shape (N,).
-        class_names : tuple[str, ...]
-            Class names of the prompt.
+        query_ids : IntArray
+            Matched query of each detection, indexing ``prompt.queries``, shape (N,).
+        prompt : Prompt
+            Prompt whose queries were scored.
         image_size : ImageSize
             Size of the source image.
 
@@ -91,8 +96,8 @@ class DetectionResult:
         return cls(
             boxes=Boxes2D.register(value=boxes_xyxy[is_valid], box2d_format=Box2DFormat.XYXY),
             confidences=np.asarray(confidences, dtype=np.float64)[is_valid],
-            class_ids=np.asarray(class_ids, dtype=np.int64)[is_valid],
-            class_names=class_names,
+            query_ids=np.asarray(query_ids, dtype=np.int64)[is_valid],
+            prompt=prompt,
             image_size=image_size,
         )
 
@@ -101,8 +106,8 @@ class DetectionResult:
         cls,
         normalized_cxcywh: FloatArray,
         confidences: FloatArray,
-        class_ids: IntArray,
-        class_names: tuple[str, ...],
+        query_ids: IntArray,
+        prompt: Prompt,
         image_size: ImageSize,
     ) -> "DetectionResult":
         """
@@ -114,10 +119,10 @@ class DetectionResult:
             Boxes as (cx, cy, w, h) relative to the image size, shape (N, 4).
         confidences : FloatArray
             Confidence of each detection in ``[0, 1]``, shape (N,).
-        class_ids : IntArray
-            Class indices into ``class_names``, shape (N,).
-        class_names : tuple[str, ...]
-            Class names of the prompt.
+        query_ids : IntArray
+            Matched query of each detection, indexing ``prompt.queries``, shape (N,).
+        prompt : Prompt
+            Prompt whose queries were scored.
         image_size : ImageSize
             Size of the source image.
 
@@ -134,18 +139,18 @@ class DetectionResult:
             Box2dConverter.convert_format(absolute_cxcywh, Box2DFormat.CXCYWH, Box2DFormat.XYXY), dtype=np.float64
         )
         return cls.from_xyxy(
-            xyxy=xyxy, confidences=confidences, class_ids=class_ids, class_names=class_names, image_size=image_size
+            xyxy=xyxy, confidences=confidences, query_ids=query_ids, prompt=prompt, image_size=image_size
         )
 
     @classmethod
-    def empty(cls, class_names: tuple[str, ...], image_size: ImageSize) -> "DetectionResult":
+    def empty(cls, prompt: Prompt, image_size: ImageSize) -> "DetectionResult":
         """
         Build a result without detections.
 
         Parameters
         ----------
-        class_names : tuple[str, ...]
-            Class names of the prompt.
+        prompt : Prompt
+            Prompt whose queries were scored.
         image_size : ImageSize
             Size of the source image.
 
@@ -157,8 +162,8 @@ class DetectionResult:
         return cls.from_xyxy(
             xyxy=np.zeros((0, 4), dtype=np.float64),
             confidences=np.zeros((0,), dtype=np.float64),
-            class_ids=np.zeros((0,), dtype=np.int64),
-            class_names=class_names,
+            query_ids=np.zeros((0,), dtype=np.int64),
+            prompt=prompt,
             image_size=image_size,
         )
 
@@ -174,18 +179,44 @@ class DetectionResult:
         """
         return np.asarray(self.boxes.value, dtype=np.float64)
 
+    @property
+    def class_names(self) -> tuple[str, ...]:
+        """
+        Output class names of the prompt.
+
+        Returns
+        -------
+        tuple[str, ...]
+            Names in class-id order.
+        """
+        return self.prompt.class_names
+
+    @property
+    def class_ids(self) -> IntArray:
+        """
+        Output class of each detection, i.e. the class of its matched query.
+
+        Returns
+        -------
+        IntArray
+            Indices into ``class_names``, shape (N,).
+        """
+        return self.prompt.class_ids_of(self.query_ids)
+
     def __len__(self) -> int:
         return len(self.boxes)
 
     def __iter__(self) -> Iterator[Detection]:
         xyxy: FloatArray = self.xyxy
         for index in range(len(self)):
-            class_id: int = int(self.class_ids[index])
+            query_id: int = int(self.query_ids[index])
+            class_id: int = self.prompt.query_class_ids[query_id]
             yield Detection(
                 box=Box2D.register(value=xyxy[index], box2d_format=Box2DFormat.XYXY),
                 confidence=float(self.confidences[index]),
                 class_id=class_id,
                 class_name=self.class_names[class_id],
+                matched_query=self.prompt.queries[query_id],
             )
 
     def select(self, indices: BoolArray | IntArray) -> "DetectionResult":
@@ -205,8 +236,8 @@ class DetectionResult:
         return DetectionResult(
             boxes=Boxes2D.register(value=self.xyxy[indices].reshape(-1, 4), box2d_format=Box2DFormat.XYXY),
             confidences=self.confidences[indices],
-            class_ids=self.class_ids[indices],
-            class_names=self.class_names,
+            query_ids=self.query_ids[indices],
+            prompt=self.prompt,
             image_size=self.image_size,
         )
 
@@ -247,7 +278,8 @@ class DetectionResult:
         iou_threshold : float
             Boxes overlapping a kept box with IoU above this value are removed.
         is_class_agnostic : bool, optional
-            If True, suppress across classes; otherwise only within each class.
+            If True, suppress across classes; otherwise only within each class, so boxes matched by different
+            queries of one class suppress each other.
 
         Raises
         ------
@@ -265,7 +297,8 @@ class DetectionResult:
             return self
         overlaps: FloatArray = np.asarray(BboxCalculator.compute_iou(self.xyxy, self.xyxy), dtype=np.float64)
         if not is_class_agnostic:
-            is_same_class: BoolArray = self.class_ids[:, None] == self.class_ids[None, :]
+            class_ids: IntArray = self.class_ids
+            is_same_class: BoolArray = class_ids[:, None] == class_ids[None, :]
             overlaps = np.where(is_same_class, overlaps, 0.0)
         is_suppressed: BoolArray = np.zeros(len(self), dtype=np.bool_)
         kept_indices: list[int] = []

@@ -7,13 +7,15 @@ Concrete `OpenVocabularyDetector` implementations. Every detector takes the comm
 `TorchRuntime`. Model outputs are handed to the shared post-processing of `OpenVocabularyDetector` as
 `RawDetections`, so thresholding, NMS and sorting behave identically across backends.
 
-`GroundingDinoDetector` and `OwlViTDetector` are exported here. The Ultralytics detectors need the optional
-`ultralytics` extra and are imported from `backends.ultralytics` only when used.
+Nothing is imported eagerly: `OVDSettings.build()` imports only the sub-package of the requested backend, so importing
+`open_vocabulary_detector` loads neither `transformers` models nor Ultralytics. Import a detector class directly from
+its sub-package (e.g. `backends.grounding_dino`) when needed. The Ultralytics detectors also need the optional
+`ultralytics` extra.
 
 ## Components
 
 | Component | Description |
 | --------- | ----------- |
-| [grounding_dino/](./grounding_dino/README.md) | Grounding DINO; text prompts. |
-| [owl_vit/](./owl_vit/README.md) | OWL-ViT; text and text-visual prompts. |
-| [ultralytics/](./ultralytics/README.md) | YOLO-World (text prompts) and YOLOE (text and text-visual prompts). |
+| [grounding_dino/](./grounding_dino/README.md) | Grounding DINO; text queries. |
+| [owl_vit/](./owl_vit/README.md) | OWL-ViT; text and visual queries, also mixed. |
+| [ultralytics/](./ultralytics/README.md) | YOLO-World (text queries) and YOLOE (text and visual queries, also mixed). |

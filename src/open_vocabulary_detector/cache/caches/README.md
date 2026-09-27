@@ -8,5 +8,5 @@ Concrete `EmbeddingCache`s, one per cached element.
 
 | Component | Description |
 | --------- | ----------- |
-| [class_name.py](./class_name.py) | `ClassNameEmbeddingCache`: text embedding per class name, kept in a dict. |
-| [visual_reference.py](./visual_reference.py) | `VisualReferenceEmbeddingCache`: box embeddings per `VisualReference`, held weakly and dropped with the reference. |
+| [text.py](./text.py) | `TextEmbeddingCache`: text embedding per text query, kept in a dict. |
+| [visual.py](./visual.py) | `VisualEmbeddingCache`: box embeddings per `VisualReference`, held weakly and dropped with the reference. |

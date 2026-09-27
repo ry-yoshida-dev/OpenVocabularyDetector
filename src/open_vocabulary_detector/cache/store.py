@@ -1,75 +1,62 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 import torch
 
-from ..prompt import Prompt, TextPrompt, TextVisualPrompt, VisualReference
-from .caches import ClassNameEmbeddingCache, VisualReferenceEmbeddingCache
-from .class_embedding_averager import ClassEmbeddingAverager
-from .reference_embeddings import ReferenceEmbeddings
+from ..prompt import Prompt, PromptQuery, TextQuery, VisualQuery, VisualReference
+from .caches import TextEmbeddingCache, VisualEmbeddingCache
 
 
 @dataclass
 class QueryEmbeddingStore:
     """
-    Builds the per-class query embeddings of a prompt from embeddings cached per class name and per reference.
+    Builds the query embeddings of a prompt from embeddings cached per text query and per reference.
 
-    Prompts sharing class names or references reuse the cached embeddings; only the cheap assembly
+    Prompts sharing text queries or references reuse the cached embeddings; only the cheap assembly
     runs per prompt.
 
     Attributes
     ----------
-    embed_class_names : Callable[[Sequence[str]], Sequence[torch.Tensor]]
-        Computes the text embedding of each class name, shape (D,) each.
-    embed_references : Callable[[Sequence[VisualReference]], Sequence[ReferenceEmbeddings]]
-        Computes the box embeddings of each visual reference.
+    embed_texts : Callable[[Sequence[str]], Sequence[torch.Tensor]]
+        Computes the text embedding of each text query, shape (D,) each.
+    embed_references : Callable[[Sequence[VisualReference]], Sequence[torch.Tensor]]
+        Computes the box embeddings of each visual reference, shape (N, D) each.
     """
 
-    embed_class_names: Callable[[Sequence[str]], Sequence[torch.Tensor]]
-    embed_references: Callable[[Sequence[VisualReference]], Sequence[ReferenceEmbeddings]]
-    _class_names: ClassNameEmbeddingCache = field(init=False, repr=False)
-    _references: VisualReferenceEmbeddingCache = field(init=False, repr=False)
+    embed_texts: Callable[[Sequence[str]], Sequence[torch.Tensor]]
+    embed_references: Callable[[Sequence[VisualReference]], Sequence[torch.Tensor]]
+    _texts: TextEmbeddingCache = field(init=False, repr=False)
+    _references: VisualEmbeddingCache = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        self._class_names = ClassNameEmbeddingCache(self.embed_class_names)
-        self._references = VisualReferenceEmbeddingCache(self.embed_references)
+        self._texts = TextEmbeddingCache(self.embed_texts)
+        self._references = VisualEmbeddingCache(self.embed_references)
 
     def embed(self, prompt: Prompt) -> torch.Tensor:
         """
-        Query embedding of every class of a prompt.
+        Embedding of every query of a prompt.
+
+        A text query yields the embedding of its phrase; a visual query the L2-normalized box embeddings of all
+        its references, averaged.
 
         Parameters
         ----------
         prompt : Prompt
-            Text or text-visual prompt.
-
-        Raises
-        ------
-        TypeError
-            If the prompt is of another kind.
+            Prompt with text queries, visual queries or both.
 
         Returns
         -------
         torch.Tensor
-            Float32 embeddings in class-id order, shape (C, D).
+            Float32 embeddings in query-id order, shape (Q, D).
         """
-        match prompt:
-            case TextPrompt():
-                return torch.stack(self._class_names.get(prompt.class_names)).float()
-            case TextVisualPrompt():
-                class_embeddings: dict[int, torch.Tensor] = self._average_references(prompt.visual_references)
-                text_class_ids: tuple[int, ...] = prompt.text_class_ids
-                text_embeddings: list[torch.Tensor] = self._class_names.get(
-                    [prompt.class_names[class_id] for class_id in text_class_ids]
-                )
-                class_embeddings.update(zip(text_class_ids, text_embeddings, strict=True))
-                return torch.stack([class_embeddings[class_id].float() for class_id in range(len(prompt.class_names))])
-            case _:
-                raise TypeError(f"cannot embed {prompt.kind} prompts.")
+        texts: list[str] = [query.text for query in prompt.queries if isinstance(query, TextQuery)]
+        text_embeddings: dict[str, torch.Tensor] = dict(zip(texts, self._texts.get(texts), strict=True))
+        return torch.stack([self._embed_query(query, text_embeddings).float() for query in prompt.queries])
 
-    def _average_references(self, references: Sequence[VisualReference]) -> dict[int, torch.Tensor]:
-        reference_embeddings: list[ReferenceEmbeddings] = self._references.get(references)
-        return ClassEmbeddingAverager.average(
-            [class_id for embeddings in reference_embeddings for class_id in embeddings.class_ids],
-            torch.cat([embeddings.embeddings for embeddings in reference_embeddings], dim=0),
-        )
+    def _embed_query(self, query: PromptQuery, text_embeddings: Mapping[str, torch.Tensor]) -> torch.Tensor:
+        match query:
+            case TextQuery(text=text):
+                return text_embeddings[text]
+            case VisualQuery(references=references):
+                box_embeddings: torch.Tensor = torch.cat(self._references.get(references), dim=0).float()
+                return torch.nn.functional.normalize(box_embeddings, dim=-1).mean(dim=0)

@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from geometry import Box2D
 
+from ..prompt import PromptQuery
+
 
 @dataclass(frozen=True)
 class Detection:
@@ -17,10 +19,13 @@ class Detection:
     class_id : int
         Index into the classes of the originating prompt.
     class_name : str
-        Class name corresponding to ``class_id``.
+        Output class name corresponding to ``class_id``.
+    matched_query : PromptQuery
+        Query that matched the box, e.g. ``TextQuery("taxi")`` or a ``VisualQuery`` for class ``"car"``.
     """
 
     box: Box2D
     confidence: float
     class_id: int
     class_name: str
+    matched_query: PromptQuery

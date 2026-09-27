@@ -4,6 +4,8 @@ Detect a fixed set of classes in every image of a directory.
 Usage
 -----
 python examples/detect_directory.py IMAGE_DIR --backend yoloe --weights yoloe-26s-seg.pt --classes person bus
+
+A class written as ``name:query,query`` (e.g. ``car:car,suv,taxi``) is queried by each phrase and reported as ``name``.
 """
 
 import argparse
@@ -19,10 +21,60 @@ from open_vocabulary_detector import (
     OVDBackend,
     OVDSettings,
     Prompt,
-    TextPrompt,
+    PromptQuery,
+    TextQuery,
+    VisualQuery,
 )
 
 IMAGE_SUFFIXES: frozenset[str] = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".webp"})
+CLASS_QUERY_SEPARATOR: str = ":"
+QUERY_SEPARATOR: str = ","
+
+
+def parse_prompt(class_arguments: list[str]) -> Prompt:
+    """
+    Build a text prompt from ``name`` or ``name:query,query`` arguments.
+
+    A class given more than once collects the phrases of every argument, e.g. ``car:car,suv car:van``.
+
+    Parameters
+    ----------
+    class_arguments : list[str]
+        Command-line class arguments.
+
+    Returns
+    -------
+    Prompt
+        Classes named ``name``, each queried by its listed phrases or by its name.
+    """
+    class_texts: dict[str, list[str]] = {}
+    for argument in class_arguments:
+        class_name, _, phrases = argument.partition(CLASS_QUERY_SEPARATOR)
+        stripped_name: str = class_name.strip()
+        class_phrases: list[str] = phrases.split(QUERY_SEPARATOR) if phrases else [stripped_name]
+        class_texts.setdefault(stripped_name, []).extend(class_phrases)
+    return Prompt.from_texts(class_texts)
+
+
+def describe_query(query: PromptQuery) -> str:
+    """
+    Short label of the query that matched a detection.
+
+    Parameters
+    ----------
+    query : PromptQuery
+        Matched query.
+
+    Returns
+    -------
+    str
+        The phrase of a text query, or the reference count of a visual query.
+    """
+    match query:
+        case TextQuery(text=text):
+            return text
+        case VisualQuery(references=references):
+            return f"<{len(references)} reference images>"
 
 
 def main() -> None:
@@ -58,8 +110,7 @@ def main() -> None:
         device=arguments.device,
         is_half_precision_enabled=arguments.half,
     ).build()
-    class_names: list[str] = arguments.classes
-    prompt: Prompt = TextPrompt(class_names=tuple(class_names))
+    prompt: Prompt = parse_prompt(arguments.classes)
 
     images: list[Image.Image] = [Image.open(path) for path in image_paths]
     results: list[DetectionResult] = detector.detect_images(images, prompt)
@@ -67,7 +118,10 @@ def main() -> None:
     for path, result in zip(image_paths, results, strict=True):
         print(f"{path.name}: {len(result)} detections")
         for detection in result:
-            print(f"  {detection.class_name:20s} {detection.confidence:.3f} {detection.box.value.round(1).tolist()}")
+            print(
+                f"  {detection.class_name:20s} {describe_query(detection.matched_query):20s} {detection.confidence:.3f} "
+                + f"{detection.box.value.round(1).tolist()}"
+            )
 
 
 if __name__ == "__main__":

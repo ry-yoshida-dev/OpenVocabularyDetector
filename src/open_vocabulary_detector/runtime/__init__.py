@@ -1,7 +1,7 @@
-from .class_prediction import ClassPrediction
 from .pytorch import TorchRuntime
+from .query_prediction import QueryPrediction
 
 __all__ = [
-    "ClassPrediction",
+    "QueryPrediction",
     "TorchRuntime",
 ]

@@ -1,12 +1,13 @@
 from .core import Prompt
 from .kind import PromptKind
-from .prompts import TextPrompt, TextVisualPrompt
+from .queries import PromptQuery, TextQuery, VisualQuery
 from .visual_reference import VisualReference
 
 __all__ = [
     "Prompt",
     "PromptKind",
-    "TextPrompt",
-    "TextVisualPrompt",
+    "PromptQuery",
+    "TextQuery",
+    "VisualQuery",
     "VisualReference",
 ]

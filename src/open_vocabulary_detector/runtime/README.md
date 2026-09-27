@@ -12,7 +12,7 @@ post-processing as `RawDetections`.
 | Component | Description |
 | --------- | ----------- |
 | [pytorch.py](./pytorch.py) | `TorchRuntime`: resolves `Device` to a `torch.device`, picks the dtype, and prepares models and inputs. |
-| [class_prediction.py](./class_prediction.py) | `ClassPrediction`: best confidence and class id of every query box from PyTorch outputs, converted to `RawDetections`. |
+| [query_prediction.py](./query_prediction.py) | `QueryPrediction`: best confidence and prompt query of every predicted box from PyTorch outputs, converted to `RawDetections`. |
 
 ## Examples
 

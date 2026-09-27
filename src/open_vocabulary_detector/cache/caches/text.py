@@ -7,9 +7,9 @@ from ..core import EmbeddingCache
 
 
 @dataclass
-class ClassNameEmbeddingCache(EmbeddingCache[str, torch.Tensor]):
+class TextEmbeddingCache(EmbeddingCache[str, torch.Tensor]):
     """
-    Text embedding per class name; a name's embedding does not depend on the other classes of a prompt.
+    Text embedding per text query; a query's embedding does not depend on the other queries of a prompt.
     """
 
     _embeddings: dict[str, torch.Tensor] = field(default_factory=dict[str, torch.Tensor], init=False, repr=False)

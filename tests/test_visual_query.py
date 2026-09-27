@@ -1,19 +1,6 @@
-import pytest
 import torch
 
 from open_vocabulary_detector.backends.owl_vit.box_query_selector import OwlViTBoxQuerySelector
-from open_vocabulary_detector.cache import ClassEmbeddingAverager
-
-
-def test_average_normalizes_and_groups_by_class() -> None:
-    class_embeddings: dict[int, torch.Tensor] = ClassEmbeddingAverager.average(
-        [2, 0, 2], torch.tensor([[2.0, 0.0], [0.0, 3.0], [0.0, 4.0]])
-    )
-    assert list(class_embeddings) == [2, 0]
-    torch.testing.assert_close(class_embeddings[2], torch.tensor([0.5, 0.5]))
-    torch.testing.assert_close(class_embeddings[0], torch.tensor([0.0, 1.0]))
-    with pytest.raises(ValueError, match="must have shape"):
-        ClassEmbeddingAverager.average([0], torch.zeros(2, 4))
 
 
 def test_box_query_selector_picks_overlapping_and_least_background_like_patch() -> None:

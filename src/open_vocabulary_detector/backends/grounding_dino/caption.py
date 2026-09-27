@@ -7,41 +7,41 @@ from .character_span import CharacterSpan
 @dataclass(frozen=True)
 class GroundingCaption:
     """
-    Grounding DINO caption built from class names, with the character span of each class.
+    Grounding DINO caption built from text queries, with the character span of each query.
 
     Attributes
     ----------
     text : str
         Caption fed to the tokenizer, e.g. ``"cat . traffic cone ."``.
-    class_spans : tuple[CharacterSpan, ...]
-        Span of each class inside ``text``, in class-id order.
+    query_spans : tuple[CharacterSpan, ...]
+        Span of each query inside ``text``, in query-id order.
     """
 
     text: str
-    class_spans: tuple[CharacterSpan, ...]
+    query_spans: tuple[CharacterSpan, ...]
 
     @classmethod
-    def from_class_names(cls, class_names: Sequence[str]) -> "GroundingCaption":
+    def from_queries(cls, text_queries: Sequence[str]) -> "GroundingCaption":
         """
-        Join class names into a caption.
+        Join text queries into a caption.
 
-        Class names are lower-cased, separated by ``" . "`` and terminated by ``" ."``.
+        Queries are lower-cased, separated by ``" . "`` and terminated by ``" ."``.
 
         Parameters
         ----------
-        class_names : Sequence[str]
-            Class names in class-id order.
+        text_queries : Sequence[str]
+            Text queries in query-id order.
 
         Returns
         -------
         GroundingCaption
-            Caption and per-class spans.
+            Caption and per-query spans.
         """
         text: str = ""
-        class_spans: list[CharacterSpan] = []
-        for class_name in class_names:
+        query_spans: list[CharacterSpan] = []
+        for text_query in text_queries:
             start: int = len(text)
-            text += class_name.lower()
-            class_spans.append(CharacterSpan(start=start, end=len(text)))
+            text += text_query.lower()
+            query_spans.append(CharacterSpan(start=start, end=len(text)))
             text += " . "
-        return cls(text=text.rstrip(), class_spans=tuple(class_spans))
+        return cls(text=text.rstrip(), query_spans=tuple(query_spans))

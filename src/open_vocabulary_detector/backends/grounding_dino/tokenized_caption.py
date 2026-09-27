@@ -9,11 +9,11 @@ from .caption import GroundingCaption
 @dataclass(frozen=True, eq=False)
 class TokenizedCaption:
     """
-    Tokenized Grounding DINO caption reused for every image batch.
+    Tokenized Grounding DINO caption reused for every image batch of a prompt.
 
     Grounding DINO fuses text and image features early, so the text encoder
-    still runs per batch; tokenization and the class-to-token mapping are
-    computed only once per prompt.
+    still runs per batch; tokenization and the query-to-token mapping are
+    computed only once per prompt (see ``ActiveCaption``).
 
     Attributes
     ----------
@@ -23,32 +23,32 @@ class TokenizedCaption:
         Attention mask, shape (1, T).
     token_type_ids : torch.Tensor
         Token type ids, shape (1, T).
-    class_token_mask : torch.Tensor
-        Boolean mask, shape (C, T); ``True`` where token t belongs to class c.
+    query_token_mask : torch.Tensor
+        Boolean mask, shape (Q, T); ``True`` where token t belongs to query q.
 
     Raises
     ------
     ValueError
-        If the mask does not match the token count or a class maps to no token.
+        If the mask does not match the token count or a query maps to no token.
     """
 
     input_ids: torch.Tensor
     attention_mask: torch.Tensor
     token_type_ids: torch.Tensor
-    class_token_mask: torch.Tensor
+    query_token_mask: torch.Tensor
 
     def __post_init__(self) -> None:
-        if self.class_token_mask.ndim != 2 or self.class_token_mask.shape[1] != self.token_count:
+        if self.query_token_mask.ndim != 2 or self.query_token_mask.shape[1] != self.token_count:
             raise ValueError(
-                f"class_token_mask must have shape (C, {self.token_count}). got {tuple(self.class_token_mask.shape)}"
+                f"query_token_mask must have shape (Q, {self.token_count}). got {tuple(self.query_token_mask.shape)}"
             )
-        if not bool(self.class_token_mask.any(dim=1).all()):
-            raise ValueError("every class must map to at least one token.")
+        if not bool(self.query_token_mask.any(dim=1).all()):
+            raise ValueError("every query must map to at least one token.")
 
     @classmethod
     def from_encoding(cls, caption: GroundingCaption, encoding: BatchEncoding) -> "TokenizedCaption":
         """
-        Map the character span of each class onto the tokens of an encoded caption.
+        Map the character span of each query onto the tokens of an encoded caption.
 
         Parameters
         ----------
@@ -60,18 +60,18 @@ class TokenizedCaption:
         Returns
         -------
         TokenizedCaption
-            Token tensors and class-to-token mask.
+            Token tensors and query-to-token mask.
         """
         offsets: list[list[int]] = encoding["offset_mapping"][0].tolist()
-        class_token_mask: torch.Tensor = torch.tensor(
-            [[span.contains(start, end) for start, end in offsets] for span in caption.class_spans],
+        query_token_mask: torch.Tensor = torch.tensor(
+            [[span.contains(start, end) for start, end in offsets] for span in caption.query_spans],
             dtype=torch.bool,
         )
         return cls(
             input_ids=encoding["input_ids"],
             attention_mask=encoding["attention_mask"],
             token_type_ids=encoding["token_type_ids"],
-            class_token_mask=class_token_mask,
+            query_token_mask=query_token_mask,
         )
 
     @property
@@ -104,24 +104,24 @@ class TokenizedCaption:
             input_ids=self.input_ids.to(device),
             attention_mask=self.attention_mask.to(device),
             token_type_ids=self.token_type_ids.to(device),
-            class_token_mask=self.class_token_mask.to(device),
+            query_token_mask=self.query_token_mask.to(device),
         )
 
-    def class_probabilities(self, logits: torch.Tensor) -> torch.Tensor:
+    def query_probabilities(self, logits: torch.Tensor) -> torch.Tensor:
         """
-        Confidence each class as the highest probability among its tokens.
+        Confidence of each query as the highest probability among its tokens.
 
         Parameters
         ----------
         logits : torch.Tensor
-            Token logits of the query boxes, shape (B, Q, L) with ``L >= T``.
+            Token logits of the predicted boxes, shape (B, N, L) with ``L >= T``.
 
         Returns
         -------
         torch.Tensor
-            Class probabilities, shape (B, Q, C).
+            Query probabilities, shape (B, N, Q).
         """
         token_probabilities: torch.Tensor = logits[..., : self.token_count].float().sigmoid()
         return torch.stack(
-            [token_probabilities[..., class_tokens].amax(dim=-1) for class_tokens in self.class_token_mask], dim=-1
+            [token_probabilities[..., query_tokens].amax(dim=-1) for query_tokens in self.query_token_mask], dim=-1
         )

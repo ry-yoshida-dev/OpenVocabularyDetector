@@ -1,7 +1,3 @@
-from .grounding_dino import GroundingDinoDetector
-from .owl_vit import OwlViTDetector
-
-__all__ = [
-    "GroundingDinoDetector",
-    "OwlViTDetector",
-]
+"""
+Concrete detectors, imported from their sub-packages so that loading one backend does not load the others.
+"""

@@ -4,11 +4,12 @@
 
 Grounding DINO through `transformers.GroundingDinoForObjectDetection` (`OVDBackend.GROUNDING_DINO`).
 
-A prompt becomes a caption: its class names are joined into `"cat . traffic cone ."`.
-Class spans are mapped to token positions once per prompt, and each query box takes the class whose tokens have the
-highest probability, so class ids come back without phrase matching.
+A prompt becomes a caption: its text queries are joined into `"car . suv . traffic cone ."`.
+The caption is tokenized and query spans are mapped to token positions once per prompt, then reused while the same
+prompt is detected. Each predicted box takes the query whose tokens have the highest probability, so query ids (and
+their classes) come back without phrase matching.
 
-Grounding DINO fuses text and image early, so text features cannot be cached per class and the caption is encoded
+Grounding DINO fuses text and image early, so text features cannot be cached per query and the caption is encoded
 together with every batch. The caption must fit in `max_text_len` (256) tokens.
 
 ## Components
@@ -16,6 +17,7 @@ together with every batch. The caption must fit in `max_text_len` (256) tokens.
 | Component | Description |
 | --------- | ----------- |
 | [detector.py](./detector.py) | `GroundingDinoDetector`. |
-| [caption.py](./caption.py) | `GroundingCaption`: caption text joined from class names and per-class character spans. |
-| [tokenized_caption.py](./tokenized_caption.py) | `TokenizedCaption`: token tensors, class-to-token mask and per-class probabilities. |
+| [active_caption.py](./active_caption.py) | `ActiveCaption`: tokenized caption of the prompt currently detected, reused across batches. |
+| [caption.py](./caption.py) | `GroundingCaption`: caption text joined from text queries and per-query character spans. |
+| [tokenized_caption.py](./tokenized_caption.py) | `TokenizedCaption`: token tensors, query-to-token mask and per-query probabilities. |
 | [character_span.py](./character_span.py) | `CharacterSpan`: half-open character range. |

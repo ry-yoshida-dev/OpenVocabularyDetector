@@ -16,14 +16,18 @@ class OpenVocabularyDetector(ABC):
     """
     Common base of every open-vocabulary detector, independent of the inference runtime.
 
-    Subclasses declare the ``BACKEND`` they implement, which defines the prompt kinds they accept;
-    a prompt of another kind is rejected before any computation. The base owns the settings,
+    Subclasses declare the ``BACKEND`` they implement, which defines the query kinds they accept;
+    a prompt using another kind is rejected before any computation. The base owns the settings,
     mini-batching and the post-processing shared by every backend (confidence threshold, optional
     class-wise NMS, sort by confidence). How the model runs (PyTorch, ONNX Runtime, TensorRT, ...)
     is up to each subclass and its runtime.
 
-    Where a backend can, query embeddings are cached per class name and per visual reference,
-    so prompts sharing class names or references do not recompute them.
+    Models score every query of the prompt, and each box keeps its best query. NMS then runs per output class,
+    so boxes found by different queries of one class (``"suv"``, ``"taxi"``, a van reference image) collapse into
+    the most confident one, which still records the query that matched.
+
+    Where a backend can, query embeddings are cached per text query and per visual reference,
+    so prompts sharing queries or references do not recompute them.
 
     Attributes
     ----------
@@ -52,7 +56,7 @@ class OpenVocabularyDetector(ABC):
     @property
     def supported_prompt_kinds(self) -> frozenset[PromptKind]:
         """
-        Prompt kinds the detector accepts.
+        Query kinds the detector accepts.
 
         Returns
         -------
@@ -135,7 +139,7 @@ class OpenVocabularyDetector(ABC):
         Raises
         ------
         ValueError
-            If ``images`` is empty or the prompt kind is not supported.
+            If ``images`` is empty or the prompt uses an unsupported query kind.
 
         Returns
         -------
@@ -151,10 +155,11 @@ class OpenVocabularyDetector(ABC):
         return results
 
     def _validate_prompt(self, prompt: Prompt) -> None:
-        if prompt.kind not in self.supported_prompt_kinds:
+        unsupported_kinds: frozenset[PromptKind] = prompt.kinds - self.supported_prompt_kinds
+        if unsupported_kinds:
             raise ValueError(
-                f"{type(self).__name__} does not support {prompt.kind} prompts. "
-                + f"supported: {sorted(self.supported_prompt_kinds)}"
+                f"{type(self).__name__} does not support {sorted(kind.value for kind in unsupported_kinds)} queries. "
+                + f"supported: {sorted(kind.value for kind in self.supported_prompt_kinds)}"
             )
 
     def _mini_batches(self, images: Sequence[Image.Image]) -> Iterator[Sequence[Image.Image]]:
@@ -168,18 +173,18 @@ class OpenVocabularyDetector(ABC):
     def _postprocess(
         self,
         raw_detections: RawDetections,
-        class_names: tuple[str, ...],
+        prompt: Prompt,
         image_sizes: Sequence[ImageSize],
     ) -> list[DetectionResult]:
         """
-        Apply the confidence threshold, optional class-wise NMS and sorting to raw model output.
+        Apply the confidence threshold, then merge queries into classes, to raw model output.
 
         Parameters
         ----------
         raw_detections : RawDetections
-            Per-query boxes, confidences and class ids of a mini-batch.
-        class_names : tuple[str, ...]
-            Class names of the prompt.
+            Per-box boxes, confidences and query ids of a mini-batch.
+        prompt : Prompt
+            Prompt whose queries the model scored.
         image_sizes : Sequence[ImageSize]
             Size of each source image, one per batch entry.
 
@@ -195,18 +200,38 @@ class OpenVocabularyDetector(ABC):
         """
         if len(image_sizes) != len(raw_detections):
             raise ValueError(f"expected {len(raw_detections)} image sizes. got {len(image_sizes)}")
-        thresholds: DetectionThresholds = self.thresholds
+        confidence_threshold: float = self.thresholds.confidence_threshold
         results: list[DetectionResult] = []
         for index, image_size in enumerate(image_sizes):
-            is_kept: BoolArray = raw_detections.confidences[index] >= thresholds.confidence_threshold
+            is_kept: BoolArray = raw_detections.confidences[index] >= confidence_threshold
             result: DetectionResult = DetectionResult.from_normalized_cxcywh(
                 normalized_cxcywh=raw_detections.normalized_cxcywh[index][is_kept],
                 confidences=raw_detections.confidences[index][is_kept],
-                class_ids=raw_detections.class_ids[index][is_kept],
-                class_names=class_names,
+                query_ids=raw_detections.query_ids[index][is_kept],
+                prompt=prompt,
                 image_size=image_size,
             )
-            if thresholds.nms_iou_threshold is not None:
-                result = result.non_maximum_suppression(thresholds.nms_iou_threshold)
-            results.append(result.sort_by_confidence())
+            results.append(self._merge_queries(result))
         return results
+
+    def _merge_queries(self, result: DetectionResult) -> DetectionResult:
+        """
+        Apply the optional class-wise NMS and sort by confidence.
+
+        NMS compares output classes, not queries, so overlapping boxes of different queries of one class
+        keep only the most confident box.
+
+        Parameters
+        ----------
+        result : DetectionResult
+            Thresholded detections of one image.
+
+        Returns
+        -------
+        DetectionResult
+            Detections ordered by descending confidence.
+        """
+        nms_iou_threshold: float | None = self.thresholds.nms_iou_threshold
+        if nms_iou_threshold is not None:
+            result = result.non_maximum_suppression(nms_iou_threshold)
+        return result.sort_by_confidence()

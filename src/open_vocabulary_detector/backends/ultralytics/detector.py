@@ -16,13 +16,14 @@ from ...settings import OVDSettings
 
 class UltralyticsDetector(OpenVocabularyDetector):
     """
-    Base of detectors whose class names are baked into an Ultralytics model.
+    Base of detectors whose queries are baked into an Ultralytics model.
 
-    The model holds one set of classes at a time. A prompt is applied to the model
+    The model holds the queries of one prompt at a time, as its "classes". A prompt is applied to the model
     only when it differs from the active one, so reusing one prompt across
-    many batches avoids re-configuring the model. Thresholding and NMS run
-    inside Ultralytics; NMS is forced to be class-wise like every other backend
-    (YOLOE would otherwise switch to class-agnostic NMS).
+    many batches avoids re-configuring the model. Thresholding and query-wise NMS run
+    inside Ultralytics (YOLOE would otherwise switch to class-agnostic NMS); the predicted query ids are then
+    folded into output classes and NMS runs again per class, like every other backend.
+    Ultralytics keeps at most 300 detections per image, a limit end-to-end heads fix inside the model.
     """
 
     DISABLED_NMS_IOU_THRESHOLD: float = 1.0
@@ -53,7 +54,7 @@ class UltralyticsDetector(OpenVocabularyDetector):
     @abstractmethod
     def _apply_prompt(self, prompt: Prompt) -> None:
         """
-        Configure the model to detect the prompt classes.
+        Configure the model to score the queries of a prompt, in query-id order.
 
         Parameters
         ----------
@@ -87,22 +88,22 @@ class UltralyticsDetector(OpenVocabularyDetector):
             if isinstance(prediction, Results)
         ]
         return [
-            self._build_result(prediction, prompt.class_names, ImageSize.from_image(image))
+            self._merge_queries(self._build_result(prediction, prompt, ImageSize.from_image(image)))
             for prediction, image in zip(predictions, images, strict=True)
         ]
 
     @staticmethod
     def _build_result(
         prediction: Results,
-        class_names: tuple[str, ...],
+        prompt: Prompt,
         image_size: ImageSize,
     ) -> DetectionResult:
         if prediction.boxes is None:
-            return DetectionResult.empty(class_names=class_names, image_size=image_size)
+            return DetectionResult.empty(prompt=prompt, image_size=image_size)
         return DetectionResult.from_xyxy(
             xyxy=torch.as_tensor(prediction.boxes.xyxy).cpu().numpy().astype(np.float64),
             confidences=torch.as_tensor(prediction.boxes.conf).cpu().numpy().astype(np.float64),
-            class_ids=torch.as_tensor(prediction.boxes.cls).cpu().numpy().astype(np.int64),
-            class_names=class_names,
+            query_ids=torch.as_tensor(prediction.boxes.cls).cpu().numpy().astype(np.int64),
+            prompt=prompt,
             image_size=image_size,
-        ).sort_by_confidence()
+        )

@@ -3,15 +3,17 @@ from enum import StrEnum
 
 class PromptKind(StrEnum):
     """
-    Kind of prompt, i.e. which inputs tell the model what each class looks like.
+    Kind of prompt query, i.e. which input tells the model what a class looks like.
+
+    A prompt may mix both kinds, even within one class; a backend accepts it when it supports every kind used.
 
     Attributes
     ----------
     TEXT : str
-        Every class is queried by its name.
-    TEXT_VISUAL : str
-        Classes with visual references are queried by those image regions, the others by their name.
+        Query by a text phrase.
+    VISUAL : str
+        Query by boxes in reference images.
     """
 
     TEXT = "text"
-    TEXT_VISUAL = "text_visual"
+    VISUAL = "visual"

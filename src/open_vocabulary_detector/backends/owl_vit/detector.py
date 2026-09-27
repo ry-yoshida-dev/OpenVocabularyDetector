@@ -7,11 +7,11 @@ from transformers import BatchEncoding, OwlViTForObjectDetection, OwlViTProcesso
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 from ...backend import OVDBackend
-from ...cache import QueryEmbeddingStore, ReferenceEmbeddings
+from ...cache import QueryEmbeddingStore
 from ...detector import OpenVocabularyDetector
 from ...prompt import Prompt, VisualReference
 from ...result import DetectionResult, ImageSize
-from ...runtime import ClassPrediction, TorchRuntime
+from ...runtime import QueryPrediction, TorchRuntime
 from ...settings import OVDSettings
 from .box_query_selector import OwlViTBoxQuerySelector
 
@@ -20,9 +20,9 @@ class OwlViTDetector(OpenVocabularyDetector):
     """
     OWL-ViT detector backed by Hugging Face ``transformers``.
 
-    Classes are queried by their names, or, in a text-visual prompt, by the patch embeddings that
-    represent their reference boxes (image-guided detection), averaged per class. Text embeddings are
-    cached per class name and reference embeddings per reference.
+    Text queries are embedded by the text encoder; visual queries by the patch embeddings that represent their
+    reference boxes (image-guided detection), averaged per query. Both kinds may be mixed in one prompt, even
+    within one class. Text embeddings are cached per phrase and reference embeddings per reference.
     """
 
     BACKEND: ClassVar[OVDBackend] = OVDBackend.OWL_VIT
@@ -43,7 +43,7 @@ class OwlViTDetector(OpenVocabularyDetector):
         self._runtime.prepare_model(self._model)
         self._text_token_limit: int = self._model.owlvit.text_model.embeddings.position_embedding.num_embeddings
         self._query_embeddings: QueryEmbeddingStore = QueryEmbeddingStore(
-            embed_class_names=self._embed_class_names, embed_references=self._embed_references
+            embed_texts=self._embed_texts, embed_references=self._embed_references
         )
 
     def _detect_mini_batch(self, images: Sequence[Image.Image], prompt: Prompt) -> list[DetectionResult]:
@@ -59,16 +59,16 @@ class OwlViTDetector(OpenVocabularyDetector):
                 None,
             )
         logits: torch.Tensor = class_outputs[0]
-        prediction: ClassPrediction = ClassPrediction.from_probabilities(logits.float().sigmoid())
+        prediction: QueryPrediction = QueryPrediction.from_probabilities(logits.float().sigmoid())
         return self._postprocess(
             raw_detections=prediction.to_raw_detections(normalized_cxcywh),
-            class_names=prompt.class_names,
+            prompt=prompt,
             image_sizes=[ImageSize.from_image(image) for image in images],
         )
 
-    def _embed_class_names(self, class_names: Sequence[str]) -> list[torch.Tensor]:
+    def _embed_texts(self, text_queries: Sequence[str]) -> list[torch.Tensor]:
         encoding: BatchEncoding = self._processor.tokenizer(
-            list(class_names),
+            list(text_queries),
             padding="max_length",
             max_length=self._text_token_limit,
             return_tensors="pt",
@@ -76,7 +76,7 @@ class OwlViTDetector(OpenVocabularyDetector):
         input_ids: torch.Tensor = encoding["input_ids"]
         if input_ids.shape[1] > self._text_token_limit:
             raise ValueError(
-                f"class names must fit in {self._text_token_limit} tokens. got {input_ids.shape[1]} tokens"
+                f"text queries must fit in {self._text_token_limit} tokens. got {input_ids.shape[1]} tokens"
             )
         with torch.inference_mode():
             text_outputs: object = cast(
@@ -90,10 +90,10 @@ class OwlViTDetector(OpenVocabularyDetector):
             raise RuntimeError(f"unexpected text encoder output: {type(text_outputs)}")
         return list(text_outputs.pooler_output.float())
 
-    def _embed_references(self, references: Sequence[VisualReference]) -> list[ReferenceEmbeddings]:
+    def _embed_references(self, references: Sequence[VisualReference]) -> list[torch.Tensor]:
         return [self._embed_reference(reference) for reference in references]
 
-    def _embed_reference(self, reference: VisualReference) -> ReferenceEmbeddings:
+    def _embed_reference(self, reference: VisualReference) -> torch.Tensor:
         feature_map, patch_features = self._extract_patch_features([self._to_rgb(reference.image)])
         with torch.inference_mode():
             class_outputs: tuple[torch.Tensor, torch.Tensor] = cast(
@@ -103,13 +103,10 @@ class OwlViTDetector(OpenVocabularyDetector):
             predicted_cxcywh: torch.Tensor = self._model.box_predictor(
                 self._typed_as_float_tensor(patch_features), self._typed_as_float_tensor(feature_map)
             )
-        return ReferenceEmbeddings(
-            class_ids=tuple(int(class_id) for class_id in reference.class_ids.tolist()),
-            embeddings=OwlViTBoxQuerySelector.select(
-                target_xyxy=torch.from_numpy(reference.normalized_xyxy),
-                predicted_cxcywh=predicted_cxcywh[0],
-                class_embeddings=class_outputs[1][0],
-            ),
+        return OwlViTBoxQuerySelector.select(
+            target_xyxy=torch.from_numpy(reference.normalized_xyxy),
+            predicted_cxcywh=predicted_cxcywh[0],
+            class_embeddings=class_outputs[1][0],
         )
 
     def _extract_patch_features(self, images: Sequence[Image.Image]) -> tuple[torch.Tensor, torch.Tensor]:
