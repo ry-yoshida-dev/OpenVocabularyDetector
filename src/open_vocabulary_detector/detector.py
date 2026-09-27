@@ -5,11 +5,10 @@ from typing import ClassVar
 from PIL import Image
 
 from .array_types import BoolArray
-from .backend import OVDBackend
-from .options import DetectionThresholds
+from .options import DetectionThresholds, DetectorBackend
 from .prompt import Prompt, PromptKind
 from .result import DetectionResult, ImageSize, RawDetections
-from .settings import OVDSettings
+from .settings import DetectorSettings
 
 
 class OpenVocabularyDetector(ABC):
@@ -31,17 +30,17 @@ class OpenVocabularyDetector(ABC):
 
     Attributes
     ----------
-    settings : OVDSettings
+    settings : DetectorSettings
         Backend, weights, batching, device and thresholds.
     """
 
-    BACKEND: ClassVar[OVDBackend]
+    BACKEND: ClassVar[DetectorBackend]
 
-    def __init__(self, settings: OVDSettings) -> None:
+    def __init__(self, settings: DetectorSettings) -> None:
         """
         Parameters
         ----------
-        settings : OVDSettings
+        settings : DetectorSettings
             Backend, weights, batching, device and thresholds.
 
         Raises
@@ -51,7 +50,7 @@ class OpenVocabularyDetector(ABC):
         """
         if settings.backend is not self.BACKEND:
             raise ValueError(f"{type(self).__name__} needs {self.BACKEND} settings. got {settings.backend}")
-        self.settings: OVDSettings = settings
+        self.settings: DetectorSettings = settings
 
     @property
     def supported_prompt_kinds(self) -> frozenset[PromptKind]:
@@ -211,10 +210,10 @@ class OpenVocabularyDetector(ABC):
                 prompt=prompt,
                 image_size=image_size,
             )
-            results.append(self._merge_queries(result))
+            results.append(self._suppress_and_sort(result))
         return results
 
-    def _merge_queries(self, result: DetectionResult) -> DetectionResult:
+    def _suppress_and_sort(self, result: DetectionResult) -> DetectionResult:
         """
         Apply the optional class-wise NMS and sort by confidence.
 

@@ -11,7 +11,7 @@ from ...detector import OpenVocabularyDetector
 from ...prompt import Prompt
 from ...result import DetectionResult, ImageSize
 from ...runtime import TorchRuntime
-from ...settings import OVDSettings
+from ...settings import DetectorSettings
 
 
 class UltralyticsDetector(OpenVocabularyDetector):
@@ -27,12 +27,13 @@ class UltralyticsDetector(OpenVocabularyDetector):
     """
 
     DISABLED_NMS_IOU_THRESHOLD: float = 1.0
+    HALF_PRECISION_QUANTIZE_BITS: int = 16
 
-    def __init__(self, settings: OVDSettings) -> None:
+    def __init__(self, settings: DetectorSettings) -> None:
         """
         Parameters
         ----------
-        settings : OVDSettings
+        settings : DetectorSettings
             Weights, batching, device and thresholds.
         """
         super().__init__(settings)
@@ -81,14 +82,14 @@ class UltralyticsDetector(OpenVocabularyDetector):
                 conf=self.thresholds.confidence_threshold,
                 iou=self.DISABLED_NMS_IOU_THRESHOLD if nms_iou_threshold is None else nms_iou_threshold,
                 device=self._runtime.device.type,
-                half=self.settings.is_half_precision_enabled,
+                quantize=self.HALF_PRECISION_QUANTIZE_BITS if self.settings.is_half_precision_enabled else None,
                 agnostic_nms=False,
                 verbose=False,
             )
             if isinstance(prediction, Results)
         ]
         return [
-            self._merge_queries(self._build_result(prediction, prompt, ImageSize.from_image(image)))
+            self._suppress_and_sort(self._build_result(prediction, prompt, ImageSize.from_image(image)))
             for prediction, image in zip(predictions, images, strict=True)
         ]
 

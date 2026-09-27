@@ -3,17 +3,17 @@ from typing import ClassVar
 
 import numpy as np
 import pytest
+from geometry import Box2DFormat, Boxes2D
 from PIL import Image
 
-from geometry import Box2DFormat, Boxes2D
 from open_vocabulary_detector import (
     DetectionResult,
     DetectionThresholds,
+    DetectorBackend,
+    DetectorSettings,
     Device,
     ImageSize,
     OpenVocabularyDetector,
-    OVDBackend,
-    OVDSettings,
     Prompt,
     TextQuery,
     VisualQuery,
@@ -32,9 +32,9 @@ QUERY_IDS: list[int] = [0, 0, 0, 1]
 
 
 class StubDetector(OpenVocabularyDetector):
-    BACKEND: ClassVar[OVDBackend] = OVDBackend.GROUNDING_DINO
+    BACKEND: ClassVar[DetectorBackend] = DetectorBackend.GROUNDING_DINO
 
-    def __init__(self, settings: OVDSettings) -> None:
+    def __init__(self, settings: DetectorSettings) -> None:
         super().__init__(settings)
         self.mini_batch_sizes: list[int] = []
         self.query_ids: list[int] = QUERY_IDS
@@ -54,9 +54,9 @@ class StubDetector(OpenVocabularyDetector):
 
 
 def build_settings(
-    backend: OVDBackend = OVDBackend.GROUNDING_DINO, nms_iou_threshold: float | None = None
-) -> OVDSettings:
-    return OVDSettings(
+    backend: DetectorBackend = DetectorBackend.GROUNDING_DINO, nms_iou_threshold: float | None = None
+) -> DetectorSettings:
+    return DetectorSettings(
         backend=backend,
         weights_path="stub",
         thresholds=DetectionThresholds(confidence_threshold=0.5, nms_iou_threshold=nms_iou_threshold),
@@ -122,15 +122,15 @@ def test_unsupported_query_kind_is_rejected_before_inference() -> None:
     with pytest.raises(ValueError, match=r"does not support \['visual'\] queries"):
         detector.detect(Image.new("RGB", (100, 50)), build_mixed_prompt())
     assert detector.mini_batch_sizes == []
-    assert detector.supported_prompt_kinds == OVDBackend.GROUNDING_DINO.supported_prompt_kinds
+    assert detector.supported_prompt_kinds == DetectorBackend.GROUNDING_DINO.supported_prompt_kinds
 
 
 class VisualStubDetector(StubDetector):
-    BACKEND: ClassVar[OVDBackend] = OVDBackend.OWL_VIT
+    BACKEND: ClassVar[DetectorBackend] = DetectorBackend.OWL_VIT
 
 
 def test_text_and_visual_queries_of_one_class_are_merged() -> None:
-    detector: VisualStubDetector = VisualStubDetector(build_settings(OVDBackend.OWL_VIT, nms_iou_threshold=0.5))
+    detector: VisualStubDetector = VisualStubDetector(build_settings(DetectorBackend.OWL_VIT, nms_iou_threshold=0.5))
     detector.query_ids = [1, 2, 0, 3]
     prompt: Prompt = build_mixed_prompt()
     result: DetectionResult = detector.detect(Image.new("RGB", (100, 50)), prompt)
@@ -143,7 +143,7 @@ def test_text_and_visual_queries_of_one_class_are_merged() -> None:
 
 def test_settings_of_another_backend_are_rejected() -> None:
     with pytest.raises(ValueError, match="needs grounding_dino settings"):
-        StubDetector(build_settings(backend=OVDBackend.YOLOE))
+        StubDetector(build_settings(backend=DetectorBackend.YOLOE))
 
 
 def test_raw_detections_validate_shapes() -> None:

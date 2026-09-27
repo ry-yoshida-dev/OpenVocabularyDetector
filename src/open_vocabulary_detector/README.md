@@ -13,10 +13,9 @@ every supported model, and the backends implementing the interface.
 | [runtime/](./runtime/README.md) | `TorchRuntime` and `QueryPrediction`: device, precision, model preparation and output conversion for PyTorch-backed detectors. |
 | [cache/](./cache/README.md) | Query embeddings of OWL-ViT and YOLOE, cached per text query and per visual reference. |
 | [array_types.py](./array_types.py) | NumPy array aliases (`FloatArray`, `IntArray`, `BoolArray`). |
-| [settings.py](./settings.py) | `OVDSettings`: backend, weights, thresholds, batch size, device and precision; `build()` loads the detector. |
-| [backend.py](./backend.py) | `OVDBackend`: detector family and the query kinds it supports. |
-| [options/](./options/README.md) | `Device` and `DetectionThresholds`: options composing `OVDSettings`. |
-| [config/](./config/README.md) | YAML presets of every backend, buildable into `OVDSettings`. |
+| [settings.py](./settings.py) | `DetectorSettings`: backend, weights, thresholds, batch size, device and precision; `build()` loads the detector. |
+| [options/](./options/README.md) | `DetectorBackend`, `Device` and `DetectionThresholds`: options composing `DetectorSettings`. |
+| [config/](./config/README.md) | YAML presets of every backend, buildable into `DetectorSettings`. |
 | [prompt/](./prompt/README.md) | `Prompt` mapping each class name to its text and visual queries, the query types and `VisualReference`. |
 | [result/](./result/README.md) | `DetectionResult`, `Detection`, `ImageSize`. |
 | [backends/](./backends/README.md) | Grounding DINO, OWL-ViT and (optional) Ultralytics detectors. |

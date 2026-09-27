@@ -9,7 +9,7 @@ Unit tests that run without downloading model weights.
 | Component | Description |
 | --------- | ----------- |
 | [test_prompt.py](./test_prompt.py) | Prompts with text, visual and mixed queries: validation, kinds, query-to-class mapping, visual references and equality. |
-| [test_configuration.py](./test_configuration.py) | YAML presets matching the `OVDSettings` schema, backend capabilities and settings validation. |
+| [test_configuration.py](./test_configuration.py) | YAML presets matching the `DetectorSettings` schema, backend capabilities and settings validation. |
 | [test_detector.py](./test_detector.py) | Shared mini-batching, post-processing (threshold, NMS, sorting), merging of mixed queries per class, query kind and backend checks. |
 | [test_package_import.py](./test_package_import.py) | Importing the package loads no backend library (`transformers` models, Ultralytics). |
 | [test_torch_runtime.py](./test_torch_runtime.py) | `TorchRuntime` device resolution, dtype and model preparation. |

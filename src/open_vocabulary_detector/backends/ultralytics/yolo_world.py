@@ -3,9 +3,9 @@ from typing import ClassVar
 from ultralytics.engine.model import Model
 from ultralytics.models.yolo.model import YOLOWorld
 
-from ...backend import OVDBackend
+from ...options import DetectorBackend
 from ...prompt import Prompt
-from ...settings import OVDSettings
+from ...settings import DetectorSettings
 from .detector import UltralyticsDetector
 
 
@@ -17,15 +17,15 @@ class YoloWorldDetector(UltralyticsDetector):
     only re-encodes the text queries.
     """
 
-    BACKEND: ClassVar[OVDBackend] = OVDBackend.YOLO_WORLD
+    BACKEND: ClassVar[DetectorBackend] = DetectorBackend.YOLO_WORLD
 
-    def __init__(self, settings: OVDSettings) -> None:
+    def __init__(self, settings: DetectorSettings) -> None:
         """
         Load the checkpoint.
 
         Parameters
         ----------
-        settings : OVDSettings
+        settings : DetectorSettings
             YOLO-World checkpoint, batching, device and thresholds.
         """
         super().__init__(settings)

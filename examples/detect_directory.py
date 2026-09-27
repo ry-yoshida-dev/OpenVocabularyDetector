@@ -16,10 +16,10 @@ from PIL import Image
 from open_vocabulary_detector import (
     DetectionResult,
     DetectionThresholds,
+    DetectorBackend,
+    DetectorSettings,
     Device,
     OpenVocabularyDetector,
-    OVDBackend,
-    OVDSettings,
     Prompt,
     PromptQuery,
     TextQuery,
@@ -83,7 +83,7 @@ def main() -> None:
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image_directory", type=Path)
-    parser.add_argument("--backend", type=OVDBackend, choices=list(OVDBackend), required=True)
+    parser.add_argument("--backend", type=DetectorBackend, choices=list(DetectorBackend), required=True)
     parser.add_argument("--weights", required=True)
     parser.add_argument("--classes", nargs="+", required=True)
     parser.add_argument("--confidence-threshold", type=float, default=0.25)
@@ -100,7 +100,7 @@ def main() -> None:
     if not image_paths:
         raise FileNotFoundError(f"no images found in {image_directory}")
 
-    detector: OpenVocabularyDetector = OVDSettings(
+    detector: OpenVocabularyDetector = DetectorSettings(
         backend=arguments.backend,
         weights_path=arguments.weights,
         thresholds=DetectionThresholds(

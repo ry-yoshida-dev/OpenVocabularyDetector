@@ -6,13 +6,13 @@ from PIL import Image
 from transformers import BatchEncoding, OwlViTForObjectDetection, OwlViTProcessor
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
-from ...backend import OVDBackend
 from ...cache import QueryEmbeddingStore
 from ...detector import OpenVocabularyDetector
+from ...options import DetectorBackend
 from ...prompt import Prompt, VisualReference
 from ...result import DetectionResult, ImageSize
 from ...runtime import QueryPrediction, TorchRuntime
-from ...settings import OVDSettings
+from ...settings import DetectorSettings
 from .box_query_selector import OwlViTBoxQuerySelector
 
 
@@ -25,15 +25,15 @@ class OwlViTDetector(OpenVocabularyDetector):
     within one class. Text embeddings are cached per phrase and reference embeddings per reference.
     """
 
-    BACKEND: ClassVar[OVDBackend] = OVDBackend.OWL_VIT
+    BACKEND: ClassVar[DetectorBackend] = DetectorBackend.OWL_VIT
 
-    def __init__(self, settings: OVDSettings) -> None:
+    def __init__(self, settings: DetectorSettings) -> None:
         """
         Load the processor and model.
 
         Parameters
         ----------
-        settings : OVDSettings
+        settings : DetectorSettings
             OWL-ViT checkpoint, batching, device and thresholds.
         """
         super().__init__(settings)

@@ -1,9 +1,9 @@
 from enum import StrEnum
 
-from .prompt import PromptKind
+from ..prompt import PromptKind
 
 
-class OVDBackend(StrEnum):
+class DetectorBackend(StrEnum):
     """
     Detector family.
 
@@ -38,7 +38,7 @@ class OVDBackend(StrEnum):
             ``TEXT`` for every backend, plus ``VISUAL`` for OWL-ViT and YOLOE.
         """
         match self:
-            case OVDBackend.OWL_VIT | OVDBackend.YOLOE:
+            case DetectorBackend.OWL_VIT | DetectorBackend.YOLOE:
                 return frozenset({PromptKind.TEXT, PromptKind.VISUAL})
-            case OVDBackend.GROUNDING_DINO | OVDBackend.YOLO_WORLD:
+            case DetectorBackend.GROUNDING_DINO | DetectorBackend.YOLO_WORLD:
                 return frozenset({PromptKind.TEXT})

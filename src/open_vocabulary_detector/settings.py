@@ -1,15 +1,14 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .backend import OVDBackend
-from .options import DetectionThresholds, Device
+from .options import DetectionThresholds, DetectorBackend, Device
 
 if TYPE_CHECKING:
     from .detector import OpenVocabularyDetector
 
 
 @dataclass(frozen=True, kw_only=True)
-class OVDSettings:
+class DetectorSettings:
     """
     Everything needed to load and run a detector, identical for every backend.
 
@@ -18,7 +17,7 @@ class OVDSettings:
 
     Attributes
     ----------
-    backend : OVDBackend
+    backend : DetectorBackend
         Detector family able to load ``weights_path``.
     weights_path : str
         Hugging Face Hub model id, Ultralytics asset name or local weights path.
@@ -37,7 +36,7 @@ class OVDSettings:
         If ``weights_path`` is blank or ``batch_size`` is not positive.
     """
 
-    backend: OVDBackend
+    backend: DetectorBackend
     weights_path: str
     thresholds: DetectionThresholds
     batch_size: int = 8
@@ -68,19 +67,19 @@ class OVDSettings:
             If ``backend`` is ``YOLO_WORLD`` or ``YOLOE`` and Ultralytics is not installed.
         """
         match self.backend:
-            case OVDBackend.GROUNDING_DINO:
+            case DetectorBackend.GROUNDING_DINO:
                 from .backends.grounding_dino import GroundingDinoDetector
 
                 return GroundingDinoDetector(self)
-            case OVDBackend.OWL_VIT:
+            case DetectorBackend.OWL_VIT:
                 from .backends.owl_vit import OwlViTDetector
 
                 return OwlViTDetector(self)
-            case OVDBackend.YOLO_WORLD:
+            case DetectorBackend.YOLO_WORLD:
                 from .backends.ultralytics import YoloWorldDetector
 
                 return YoloWorldDetector(self)
-            case OVDBackend.YOLOE:
+            case DetectorBackend.YOLOE:
                 from .backends.ultralytics import YoloEDetector
 
                 return YoloEDetector(self)

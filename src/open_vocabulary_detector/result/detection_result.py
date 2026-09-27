@@ -2,7 +2,6 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 import numpy as np
-
 from geometry import BboxCalculator, Box2D, Box2dConverter, Box2DFormat, Boxes2D
 
 from ..array_types import BoolArray, FloatArray, IntArray

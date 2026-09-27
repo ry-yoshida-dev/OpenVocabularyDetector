@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-
 from geometry import Box2DFormat
+
 from open_vocabulary_detector import DetectionResult, ImageSize, Prompt, TextQuery
 
 PROMPT: Prompt = Prompt.from_class_names(("cat", "dog"))

@@ -2,12 +2,12 @@
 
 ## Overview
 
-Concrete `OpenVocabularyDetector` implementations. Every detector takes the common `OVDSettings`, declares the
-`OVDBackend` it serves, turns a prompt into its model-specific encoding, and runs its model through a
+Concrete `OpenVocabularyDetector` implementations. Every detector takes the common `DetectorSettings`, declares the
+`DetectorBackend` it serves, turns a prompt into its model-specific encoding, and runs its model through a
 `TorchRuntime`. Model outputs are handed to the shared post-processing of `OpenVocabularyDetector` as
 `RawDetections`, so thresholding, NMS and sorting behave identically across backends.
 
-Nothing is imported eagerly: `OVDSettings.build()` imports only the sub-package of the requested backend, so importing
+Nothing is imported eagerly: `DetectorSettings.build()` imports only the sub-package of the requested backend, so importing
 `open_vocabulary_detector` loads neither `transformers` models nor Ultralytics. Import a detector class directly from
 its sub-package (e.g. `backends.grounding_dino`) when needed. The Ultralytics detectors also need the optional
 `ultralytics` extra.

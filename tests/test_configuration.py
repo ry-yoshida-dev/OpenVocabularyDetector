@@ -5,7 +5,7 @@ import pytest
 import yaml
 
 import open_vocabulary_detector
-from open_vocabulary_detector import DetectionThresholds, Device, OVDBackend, OVDSettings, PromptKind
+from open_vocabulary_detector import DetectionThresholds, DetectorBackend, DetectorSettings, Device, PromptKind
 
 PRESET_DIRECTORY: Path = Path(open_vocabulary_detector.__file__).parent / "config"
 
@@ -20,13 +20,13 @@ def load_preset_section(path: Path) -> dict[str, object]:
 
 def test_every_backend_has_presets() -> None:
     preset_backends: set[str] = {path.parent.name for path in PRESET_DIRECTORY.glob("*/*.yaml")}
-    assert preset_backends == {backend.value for backend in OVDBackend}
+    assert preset_backends == {backend.value for backend in DetectorBackend}
 
 
 @pytest.mark.parametrize("path", sorted(PRESET_DIRECTORY.glob("*/*.yaml")), ids=lambda path: path.stem)
 def test_preset_matches_settings_schema(path: Path) -> None:
     section: dict[str, object] = load_preset_section(path)
-    assert set(section) == {field.name for field in fields(OVDSettings)}
+    assert set(section) == {field.name for field in fields(DetectorSettings)}
     assert section["backend"] == path.parent.name
     assert section["device"] in {device.value for device in Device}
     thresholds: object = section["thresholds"]
@@ -35,16 +35,16 @@ def test_preset_matches_settings_schema(path: Path) -> None:
 
 
 def test_backend_capabilities() -> None:
-    assert OVDBackend.GROUNDING_DINO.supported_prompt_kinds == frozenset({PromptKind.TEXT})
-    assert OVDBackend.OWL_VIT.supported_prompt_kinds == frozenset({PromptKind.TEXT, PromptKind.VISUAL})
-    assert OVDBackend.YOLOE.supported_prompt_kinds == frozenset({PromptKind.TEXT, PromptKind.VISUAL})
-    assert OVDBackend.YOLO_WORLD.supported_prompt_kinds == frozenset({PromptKind.TEXT})
+    assert DetectorBackend.GROUNDING_DINO.supported_prompt_kinds == frozenset({PromptKind.TEXT})
+    assert DetectorBackend.OWL_VIT.supported_prompt_kinds == frozenset({PromptKind.TEXT, PromptKind.VISUAL})
+    assert DetectorBackend.YOLOE.supported_prompt_kinds == frozenset({PromptKind.TEXT, PromptKind.VISUAL})
+    assert DetectorBackend.YOLO_WORLD.supported_prompt_kinds == frozenset({PromptKind.TEXT})
 
 
 def test_invalid_settings_raise() -> None:
     with pytest.raises(ValueError, match="batch_size"):
-        OVDSettings(
-            backend=OVDBackend.YOLOE,
+        DetectorSettings(
+            backend=DetectorBackend.YOLOE,
             weights_path="yoloe-26s-seg.pt",
             thresholds=DetectionThresholds(confidence_threshold=0.25, nms_iou_threshold=0.7),
             batch_size=0,
@@ -52,8 +52,8 @@ def test_invalid_settings_raise() -> None:
     with pytest.raises(ValueError, match="confidence_threshold"):
         DetectionThresholds(confidence_threshold=1.5, nms_iou_threshold=None)
     with pytest.raises(ValueError, match="weights_path"):
-        OVDSettings(
-            backend=OVDBackend.YOLOE,
+        DetectorSettings(
+            backend=DetectorBackend.YOLOE,
             weights_path=" ",
             thresholds=DetectionThresholds(confidence_threshold=0.25, nms_iou_threshold=None),
         )

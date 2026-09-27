@@ -7,7 +7,7 @@ it. A class may be queried by several text phrases, several visual queries, or b
 `"car"`, `"suv"` and photos of a van. The model scores every query, each box keeps its best one, and the detection
 is reported under the class of that query together with the query itself (`Detection.matched_query`).
 
-A detector accepts a prompt when `OVDBackend.supported_prompt_kinds` covers every query kind it uses
+A detector accepts a prompt when `DetectorBackend.supported_prompt_kinds` covers every query kind it uses
 (`Prompt.kinds`): text only for Grounding DINO and YOLO-World, text and visual (also mixed) for OWL-ViT and YOLOE.
 
 ## Components

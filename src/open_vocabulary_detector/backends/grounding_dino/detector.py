@@ -5,12 +5,12 @@ import torch
 from PIL import Image
 from transformers import BatchEncoding, GroundingDinoForObjectDetection, GroundingDinoProcessor
 
-from ...backend import OVDBackend
 from ...detector import OpenVocabularyDetector
+from ...options import DetectorBackend
 from ...prompt import Prompt
 from ...result import DetectionResult, ImageSize
 from ...runtime import QueryPrediction, TorchRuntime
-from ...settings import OVDSettings
+from ...settings import DetectorSettings
 from .active_caption import ActiveCaption
 from .caption import GroundingCaption
 from .tokenized_caption import TokenizedCaption
@@ -25,15 +25,15 @@ class GroundingDinoDetector(OpenVocabularyDetector):
     phrase matching. The caption is tokenized once per prompt and reused while the same prompt is detected.
     """
 
-    BACKEND: ClassVar[OVDBackend] = OVDBackend.GROUNDING_DINO
+    BACKEND: ClassVar[DetectorBackend] = DetectorBackend.GROUNDING_DINO
 
-    def __init__(self, settings: OVDSettings) -> None:
+    def __init__(self, settings: DetectorSettings) -> None:
         """
         Load the processor and model.
 
         Parameters
         ----------
-        settings : OVDSettings
+        settings : DetectorSettings
             Grounding DINO checkpoint, batching, device and thresholds.
         """
         super().__init__(settings)

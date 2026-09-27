@@ -3,9 +3,9 @@ from collections.abc import Sequence
 
 import numpy as np
 import torch
+from geometry import Box2DFormat, Boxes2D
 from PIL import Image
 
-from geometry import Box2DFormat, Boxes2D
 from open_vocabulary_detector import Prompt, TextQuery, VisualQuery, VisualReference
 from open_vocabulary_detector.cache import QueryEmbeddingStore
 
@@ -76,7 +76,7 @@ def test_unused_references_are_released() -> None:
     store.embed(Prompt({"my mug": (VisualQuery((build_reference([[0.0, 0.0, 5.0, 5.0]]),)),)}))
     embedder.embedded_references.clear()
     gc.collect()
-    assert len(store._references._embeddings) == 0
+    assert len(store._references.entries) == 0
 
 
 def test_text_and_visual_queries_keep_query_order() -> None:

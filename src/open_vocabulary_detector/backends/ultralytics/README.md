@@ -2,7 +2,7 @@
 
 ## Overview
 
-YOLO-World (`OVDBackend.YOLO_WORLD`) and YOLOE (`OVDBackend.YOLOE`) through Ultralytics.
+YOLO-World (`DetectorBackend.YOLO_WORLD`) and YOLOE (`DetectorBackend.YOLOE`) through Ultralytics.
 
 Ultralytics is licensed under AGPL-3.0 and is an optional dependency (`pip install "open-vocabulary-detector[ultralytics]"`).
 Importing this package without it raises `ModuleNotFoundError` with that hint; the rest of `open_vocabulary_detector`
@@ -18,7 +18,8 @@ YOLOE-26) fix this limit inside the model, so it is left at the Ultralytics defa
 
 - YOLO-World (text queries): applying a prompt sets the text queries (CLIP text encoding, cached by Ultralytics).
 - YOLOE (text and visual queries, also mixed): applying a prompt computes text embeddings for the text queries and
-  visual prompt embeddings of the reference boxes (averaged per visual query), then sets them on the model.
+  visual prompt embeddings of every reference box (averaged per visual query), then sets them on the model. The
+  visual prompt predictor holds its own copy of the network; it is built on the first visual query and reused.
 
 ## Components
 
@@ -28,4 +29,3 @@ YOLOE-26) fix this limit inside the model, so it is left at the Ultralytics defa
 | [yolo_world.py](./yolo_world.py) | `YoloWorldDetector`. |
 | [yolo_e.py](./yolo_e.py) | `YoloEDetector`, including visual prompt embedding. |
 | [installation.py](./installation.py) | Fails fast with an installation hint when Ultralytics is missing. |
-| [detection_head.py](./detection_head.py) | `DetectionHead`: typed protocol for the class count of an Ultralytics head. |

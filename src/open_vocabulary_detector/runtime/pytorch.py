@@ -1,22 +1,22 @@
 import torch
 
 from ..options import Device
-from ..settings import OVDSettings
+from ..settings import DetectorSettings
 
 
 class TorchRuntime:
     """
-    Runs PyTorch models on the device and precision requested by ``OVDSettings``.
+    Runs PyTorch models on the device and precision requested by ``DetectorSettings``.
 
     Detectors backed by PyTorch hold one; detectors backed by another runtime (ONNX Runtime, TensorRT)
     would hold their own runtime instead, while sharing everything else through ``OpenVocabularyDetector``.
     """
 
-    def __init__(self, settings: OVDSettings) -> None:
+    def __init__(self, settings: DetectorSettings) -> None:
         """
         Parameters
         ----------
-        settings : OVDSettings
+        settings : DetectorSettings
             Device and precision to run with.
 
         Raises

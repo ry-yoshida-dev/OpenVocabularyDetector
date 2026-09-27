@@ -1,13 +1,13 @@
 import pytest
 import torch
 
-from open_vocabulary_detector import DetectionThresholds, Device, OVDBackend, OVDSettings
+from open_vocabulary_detector import DetectionThresholds, DetectorBackend, DetectorSettings, Device
 from open_vocabulary_detector.runtime import TorchRuntime
 
 
-def build_settings(device: Device, is_half_precision_enabled: bool = False) -> OVDSettings:
-    return OVDSettings(
-        backend=OVDBackend.OWL_VIT,
+def build_settings(device: Device, is_half_precision_enabled: bool = False) -> DetectorSettings:
+    return DetectorSettings(
+        backend=DetectorBackend.OWL_VIT,
         weights_path="stub",
         thresholds=DetectionThresholds(confidence_threshold=0.1, nms_iou_threshold=0.3),
         device=device,

@@ -1,10 +1,11 @@
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from weakref import WeakKeyDictionary
 
 import torch
 
 from ..prompt import Prompt, PromptQuery, TextQuery, VisualQuery, VisualReference
-from .caches import TextEmbeddingCache, VisualEmbeddingCache
+from .core import EmbeddingCache
 
 
 @dataclass
@@ -13,24 +14,26 @@ class QueryEmbeddingStore:
     Builds the query embeddings of a prompt from embeddings cached per text query and per reference.
 
     Prompts sharing text queries or references reuse the cached embeddings; only the cheap assembly
-    runs per prompt.
+    runs per prompt. Reference embeddings are held weakly, so they are dropped together with their reference.
 
     Attributes
     ----------
     embed_texts : Callable[[Sequence[str]], Sequence[torch.Tensor]]
         Computes the text embedding of each text query, shape (D,) each.
     embed_references : Callable[[Sequence[VisualReference]], Sequence[torch.Tensor]]
-        Computes the box embeddings of each visual reference, shape (N, D) each.
+        Computes the box embeddings of each visual reference, one row per box, shape (N, D) each.
     """
 
     embed_texts: Callable[[Sequence[str]], Sequence[torch.Tensor]]
     embed_references: Callable[[Sequence[VisualReference]], Sequence[torch.Tensor]]
-    _texts: TextEmbeddingCache = field(init=False, repr=False)
-    _references: VisualEmbeddingCache = field(init=False, repr=False)
+    _texts: EmbeddingCache[str, torch.Tensor] = field(init=False, repr=False)
+    _references: EmbeddingCache[VisualReference, torch.Tensor] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        self._texts = TextEmbeddingCache(self.embed_texts)
-        self._references = VisualEmbeddingCache(self.embed_references)
+        self._texts = EmbeddingCache(compute=self.embed_texts, entries=dict[str, torch.Tensor]())
+        self._references = EmbeddingCache(
+            compute=self.embed_references, entries=WeakKeyDictionary[VisualReference, torch.Tensor]()
+        )
 
     def embed(self, prompt: Prompt) -> torch.Tensor:
         """

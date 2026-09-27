@@ -2,9 +2,9 @@ from collections.abc import Mapping, Sequence
 
 import numpy as np
 import pytest
+from geometry import Box2DFormat, Boxes2D
 from PIL import Image
 
-from geometry import Box2DFormat, Boxes2D
 from open_vocabulary_detector import Prompt, PromptKind, PromptQuery, TextQuery, VisualQuery, VisualReference
 
 

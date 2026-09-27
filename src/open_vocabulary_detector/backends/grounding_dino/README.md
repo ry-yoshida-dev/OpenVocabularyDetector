@@ -2,7 +2,7 @@
 
 ## Overview
 
-Grounding DINO through `transformers.GroundingDinoForObjectDetection` (`OVDBackend.GROUNDING_DINO`).
+Grounding DINO through `transformers.GroundingDinoForObjectDetection` (`DetectorBackend.GROUNDING_DINO`).
 
 A prompt becomes a caption: its text queries are joined into `"car . suv . traffic cone ."`.
 The caption is tokenized and query spans are mapped to token positions once per prompt, then reused while the same

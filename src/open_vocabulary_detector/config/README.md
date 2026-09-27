@@ -2,12 +2,12 @@
 
 ## Overview
 
-Ready-made YAML presets of every supported model, one folder per `OVDBackend` value, named by model size.
+Ready-made YAML presets of every supported model, one folder per `DetectorBackend` value, named by model size.
 
 Each preset's `detector` section maps one-to-one onto the fields of
-[`OVDSettings`](../settings.py) (enums written by value, `thresholds` as a nested section, `null` disabling
+[`DetectorSettings`](../settings.py) (enums written by value, `thresholds` as a nested section, `null` disabling
 NMS), so it can be built with any dataclass builder such as
-`DictConfigHandler.build_dataclass(OVDSettings, key="detector")`. Switching models means switching preset files.
+`DictConfigHandler.build_dataclass(DetectorSettings, key="detector")`. Switching models means switching preset files.
 
 | Folder | Presets |
 | ------ | ------- |

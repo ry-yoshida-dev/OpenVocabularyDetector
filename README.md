@@ -4,13 +4,13 @@
 
 `open_vocabulary_detector` puts Grounding DINO, OWL-ViT, YOLO-World and YOLOE behind one interface so that models can
 be swapped and compared by changing configuration only. Application code builds a prompt, calls one
-`OpenVocabularyDetector`, and reads one `DetectionResult` type; which model runs is decided by an `OVDSettings`,
+`OpenVocabularyDetector`, and reads one `DetectionResult` type; which model runs is decided by a `DetectorSettings`,
 normally built from a YAML preset.
 
 - **Configuration is data**: every model-specific value (weights, recommended thresholds, batch size) lives in a YAML
   preset under [config/](src/open_vocabulary_detector/config/README.md), one folder per backend. The same
-  `OVDSettings` fields apply to every model.
-- **Code knows only what cannot be data**: `OVDBackend.supported_prompt_kinds` states which query kinds a family
+  `DetectorSettings` fields apply to every model.
+- **Code knows only what cannot be data**: `DetectorBackend.supported_prompt_kinds` states which query kinds a family
   accepts. A detector rejects a prompt using an unsupported kind before running the model.
 - **Classes are separate from queries**: a `Prompt` maps each class name (class id = key order) to its queries, text
   phrases (`TextQuery`), reference images (`VisualQuery`) or both, e.g. `"car"` by `"car"`, `"suv"` and photos of a
@@ -73,10 +73,10 @@ pip install "dictconfig-handler @ git+https://github.com/ry-yoshida-dev/DictConf
 from dictconfig_handler import DictConfigHandler
 from omegaconf import OmegaConf
 
-from open_vocabulary_detector import OVDSettings, Prompt
+from open_vocabulary_detector import DetectorSettings, Prompt
 
 preset_path = "src/open_vocabulary_detector/config/yoloe/26s.yaml"
-settings = DictConfigHandler(cfg=OmegaConf.load(preset_path)).build_dataclass(OVDSettings, key="detector")
+settings = DictConfigHandler(cfg=OmegaConf.load(preset_path)).build_dataclass(DetectorSettings, key="detector")
 detector = settings.build()
 
 results = detector.detect_images(images, Prompt.from_class_names(("person", "bus", "traffic light")))

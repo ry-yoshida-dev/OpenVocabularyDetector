@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 
 import numpy as np
-from PIL import Image
-
 from geometry import Box2DFormat, Boxes2D
+from PIL import Image
 
 from ..array_types import FloatArray
 
