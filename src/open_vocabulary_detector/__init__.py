@@ -1,5 +1,5 @@
 from .backend import OVDBackend
-from .backends import GroundingDinoDetector, OwlViTDetector, YoloEDetector, YoloWorldDetector
+from .backends import GroundingDinoDetector, OwlViTDetector
 from .detector import OpenVocabularyDetector
 from .options import DetectionThresholds, Device
 from .prompt import (
@@ -28,6 +28,4 @@ __all__ = [
     "TextPrompt",
     "TextVisualPrompt",
     "VisualReference",
-    "YoloEDetector",
-    "YoloWorldDetector",
 ]

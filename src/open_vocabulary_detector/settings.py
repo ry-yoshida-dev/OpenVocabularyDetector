@@ -54,19 +54,33 @@ class OVDSettings:
         """
         Load the detector of ``backend`` with these settings.
 
+        Ultralytics is imported only for ``YOLO_WORLD`` and ``YOLOE``, so the other backends work without the
+        ``ultralytics`` extra installed.
+
         Returns
         -------
         OpenVocabularyDetector
             Loaded detector.
-        """
-        from .backends import GroundingDinoDetector, OwlViTDetector, YoloEDetector, YoloWorldDetector
 
+        Raises
+        ------
+        ModuleNotFoundError
+            If ``backend`` is ``YOLO_WORLD`` or ``YOLOE`` and Ultralytics is not installed.
+        """
         match self.backend:
             case OVDBackend.GROUNDING_DINO:
+                from .backends.grounding_dino import GroundingDinoDetector
+
                 return GroundingDinoDetector(self)
             case OVDBackend.OWL_VIT:
+                from .backends.owl_vit import OwlViTDetector
+
                 return OwlViTDetector(self)
             case OVDBackend.YOLO_WORLD:
+                from .backends.ultralytics import YoloWorldDetector
+
                 return YoloWorldDetector(self)
             case OVDBackend.YOLOE:
+                from .backends.ultralytics import YoloEDetector
+
                 return YoloEDetector(self)

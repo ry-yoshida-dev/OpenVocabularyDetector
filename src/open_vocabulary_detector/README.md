@@ -19,7 +19,7 @@ every supported model, and the backends implementing the interface.
 | [config/](./config/README.md) | YAML presets of every backend, buildable into `OVDSettings`. |
 | [prompt/](./prompt/README.md) | `Prompt` base, `PromptKind`, `VisualReference`, and the concrete prompts `TextPrompt` and `TextVisualPrompt`. |
 | [result/](./result/README.md) | `DetectionResult`, `Detection`, `ImageSize`. |
-| [backends/](./backends/README.md) | Grounding DINO, OWL-ViT and Ultralytics detectors. |
+| [backends/](./backends/README.md) | Grounding DINO, OWL-ViT and (optional) Ultralytics detectors. |
 
 ## Examples
 

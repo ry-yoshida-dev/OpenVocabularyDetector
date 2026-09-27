@@ -27,8 +27,8 @@ normally built from a YAML preset.
 | ------- | ------- | ------- |
 | `grounding_dino` | Hugging Face `transformers` | `tiny`, `base` |
 | `owl_vit` | Hugging Face `transformers` | `base_patch32`, `base_patch16`, `large_patch14` |
-| `yolo_world` | Ultralytics | `s`, `m`, `l`, `x` |
-| `yoloe` | Ultralytics | `26n` ... `26x`, `11s` ... `11l`, `v8s` ... `v8l` |
+| `yolo_world` | Ultralytics (optional, AGPL-3.0) | `s`, `m`, `l`, `x` |
+| `yoloe` | Ultralytics (optional, AGPL-3.0) | `26n` ... `26x`, `11s` ... `11l`, `v8s` ... `v8l` |
 
 Images are processed in mini-batches. OWL-ViT and YOLOE cache query embeddings per class name and per visual
 reference, so prompts that share classes do not recompute them. Weights are downloaded on first use.
@@ -38,7 +38,21 @@ For module details, see [src/open_vocabulary_detector/README.md](src/open_vocabu
 ## Installation
 
 ```bash
-pip install -e ".[dev]"
+pip install -e .
+```
+
+Grounding DINO and OWL-ViT need only the core dependencies. YOLO-World and YOLOE are backed by Ultralytics, which is
+licensed under AGPL-3.0 and is therefore an optional extra; install it only when its license terms are acceptable for
+your use:
+
+```bash
+pip install -e ".[ultralytics]"
+```
+
+For development (type checking the Ultralytics backends also requires the `ultralytics` extra):
+
+```bash
+pip install -e ".[dev,ultralytics]"
 ```
 
 ## Examples

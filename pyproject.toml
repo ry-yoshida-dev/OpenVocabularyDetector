@@ -22,8 +22,6 @@ dependencies = [
     "torch",
     "torchvision",
     "transformers>=5.0",
-    "ultralytics>=8.3",
-    "clip @ git+https://github.com/ultralytics/CLIP.git",
     "geometry @ git+https://github.com/ry-yoshida-dev/Geometry.git",
 ]
 
@@ -32,6 +30,7 @@ Homepage = "https://github.com/ry-yoshida-dev/OpenVocabularyDetector"
 "Bug Tracker" = "https://github.com/ry-yoshida-dev/OpenVocabularyDetector/issues"
 
 [project.optional-dependencies]
+ultralytics = ["ultralytics>=8.3", "clip @ git+https://github.com/ultralytics/CLIP.git"]
 dev = ["pytest>=8.0", "pyyaml", "types-PyYAML", "mypy", "basedpyright", "ruff"]
 
 [tool.setuptools.packages.find]

@@ -7,6 +7,9 @@ Concrete `OpenVocabularyDetector` implementations. Every detector takes the comm
 `TorchRuntime`. Model outputs are handed to the shared post-processing of `OpenVocabularyDetector` as
 `RawDetections`, so thresholding, NMS and sorting behave identically across backends.
 
+`GroundingDinoDetector` and `OwlViTDetector` are exported here. The Ultralytics detectors need the optional
+`ultralytics` extra and are imported from `backends.ultralytics` only when used.
+
 ## Components
 
 | Component | Description |
