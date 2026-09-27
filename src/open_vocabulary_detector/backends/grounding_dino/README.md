@@ -11,6 +11,7 @@ their classes) come back without phrase matching.
 
 Grounding DINO fuses text and image early, so text features cannot be cached per query and the caption is encoded
 together with every batch. The caption must fit in `max_text_len` (256) tokens.
+Grounding DINO splits phrases at `.` and `?`, so text queries containing them are rejected.
 
 ## Components
 
