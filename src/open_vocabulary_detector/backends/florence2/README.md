@@ -11,7 +11,8 @@ at bin centers without rounding to whole pixels; polygon answers are bounded by 
 polygons are read in generation order.
 
 Inference cost grows linearly with the number of text queries: each one is a separate beam search
-(`BEAM_COUNT` = 3 beams, up to `MAX_NEW_TOKENS` = 1024 tokens). Keep prompts short, or prefer a detector that scores
+(`BEAM_COUNT` = 3 beams, up to `MAX_NEW_TOKENS` = 1024 tokens). Images are preprocessed only once per mini-batch
+and shared by every query. Keep prompts short, or prefer a detector that scores
 every query in one pass when a prompt has many queries.
 
 The model gives no score, so every box has confidence `1.0`: the confidence threshold removes nothing, NMS keeps the

@@ -231,6 +231,6 @@ class OpenVocabularyDetector(ABC):
             Detections ordered by descending confidence.
         """
         nms_iou_threshold: float | None = self.thresholds.nms_iou_threshold
-        if nms_iou_threshold is not None:
-            result = result.non_maximum_suppression(nms_iou_threshold)
-        return result.sort_by_confidence()
+        if nms_iou_threshold is None:
+            return result.sort_by_confidence()
+        return result.non_maximum_suppression(nms_iou_threshold)
