@@ -8,7 +8,7 @@ version = "0.0.1"
 authors = [
   { name = "Ryuto Yoshida" },
 ]
-description = "Unified interface for open-vocabulary object detectors (Grounding DINO, YOLO-World, YOLOE, OWL-ViT)."
+description = "Unified interface for open-vocabulary object detectors (Grounding DINO, MM-Grounding-DINO, OWL-ViT, OWLv2, OmDet-Turbo, Florence-2, YOLO-World, YOLOE)."
 readme = "README.md"
 requires-python = ">=3.12"
 classifiers = [
@@ -31,6 +31,7 @@ Homepage = "https://github.com/ry-yoshida-dev/OpenVocabularyDetector"
 
 [project.optional-dependencies]
 ultralytics = ["ultralytics>=8.4.80", "clip @ git+https://github.com/ultralytics/CLIP.git"]
+omdet-turbo = ["timm"]
 dev = ["pytest>=8.0", "pyyaml", "types-PyYAML", "mypy", "basedpyright", "ruff"]
 
 [tool.setuptools.packages.find]
@@ -46,7 +47,7 @@ pythonpath = ["src"]
 [tool.mypy]
 strict = true
 mypy_path = "src"
-untyped_calls_exclude = ["ultralytics"]
+untyped_calls_exclude = ["ultralytics", "transformers.modeling_utils"]
 
 [[tool.mypy.overrides]]
 module = ["torchvision.*"]

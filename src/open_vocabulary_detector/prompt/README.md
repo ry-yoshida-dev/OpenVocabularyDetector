@@ -8,7 +8,8 @@ it. A class may be queried by several text phrases, several visual queries, or b
 is reported under the class of that query together with the query itself (`Detection.matched_query`).
 
 A detector accepts a prompt when `DetectorBackend.supported_prompt_kinds` covers every query kind it uses
-(`Prompt.kinds`): text only for Grounding DINO and YOLO-World, text and visual (also mixed) for OWL-ViT and YOLOE.
+(`Prompt.kinds`): text only for Grounding DINO, OmDet-Turbo, Florence-2 and YOLO-World, text and visual (also mixed)
+for OWL-ViT, OWLv2 and YOLOE.
 
 ## Components
 
@@ -28,8 +29,10 @@ prompt = Prompt.from_texts({"car": ("car", "suv", "taxi"), "person": ("person",)
 prompt.query_texts  # ("car", "suv", "taxi", "person")
 
 van_references = (VisualReference(image=van_image_1, boxes=boxes_1), VisualReference(image=van_image_2, boxes=boxes_2))
-Prompt({
-    "car": (TextQuery("car"), TextQuery("suv"), VisualQuery(van_references)),
-    "my mug": (VisualQuery((mug_reference,)),),
-})
+Prompt(
+    {
+        "car": (TextQuery("car"), TextQuery("suv"), VisualQuery(van_references)),
+        "my mug": (VisualQuery((mug_reference,)),),
+    }
+)
 ```

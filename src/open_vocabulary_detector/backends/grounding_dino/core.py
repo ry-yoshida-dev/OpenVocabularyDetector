@@ -1,9 +1,15 @@
+from abc import abstractmethod
 from collections.abc import Sequence
 from typing import ClassVar
 
 import torch
 from PIL import Image
-from transformers import BatchEncoding, GroundingDinoForObjectDetection, GroundingDinoProcessor
+from transformers import (
+    BatchEncoding,
+    GroundingDinoForObjectDetection,
+    GroundingDinoProcessor,
+    MMGroundingDinoForObjectDetection,
+)
 
 from ...detector import OpenVocabularyDetector
 from ...options import DetectorBackend
@@ -16,13 +22,17 @@ from .caption import GroundingCaption
 from .tokenized_caption import TokenizedCaption
 
 
-class GroundingDinoDetector(OpenVocabularyDetector):
+class GroundingDetector[ModelT: GroundingDinoForObjectDetection | MMGroundingDinoForObjectDetection](
+    OpenVocabularyDetector
+):
     """
-    Grounding DINO detector backed by Hugging Face ``transformers``.
+    Base of Grounding DINO family detectors backed by Hugging Face ``transformers``.
 
     Text queries are joined into a caption (``"car . suv . taxi . dog ."``). Each predicted box is assigned the
     query whose tokens have the highest probability, so queries and their classes map back to the prompt without
     phrase matching. The caption is tokenized once per prompt and reused while the same prompt is detected.
+    Subclasses only choose the model architecture; the processor, caption handling and the ``GROUNDING_DINO``
+    backend are shared.
     """
 
     BACKEND: ClassVar[DetectorBackend] = DetectorBackend.GROUNDING_DINO
@@ -34,16 +44,30 @@ class GroundingDinoDetector(OpenVocabularyDetector):
         Parameters
         ----------
         settings : DetectorSettings
-            Grounding DINO checkpoint, batching, device and thresholds.
+            Checkpoint, batching, device and thresholds.
         """
         super().__init__(settings)
         self._runtime: TorchRuntime = TorchRuntime(settings)
         self._processor: GroundingDinoProcessor = GroundingDinoProcessor.from_pretrained(settings.weights_path)
-        self._model: GroundingDinoForObjectDetection = GroundingDinoForObjectDetection.from_pretrained(
-            settings.weights_path
-        )
+        self._model: ModelT = self._load_model(settings.weights_path)
         self._runtime.prepare_model(self._model)
         self._active_caption: ActiveCaption | None = None
+
+    @abstractmethod
+    def _load_model(self, weights_path: str) -> ModelT:
+        """
+        Load the detection model of the checkpoint.
+
+        Parameters
+        ----------
+        weights_path : str
+            Hugging Face Hub model id or local checkpoint directory.
+
+        Returns
+        -------
+        ModelT
+            Loaded model.
+        """
 
     def _caption_of(self, prompt: Prompt) -> TokenizedCaption:
         if self._active_caption is None or not self._active_caption.is_for(prompt):

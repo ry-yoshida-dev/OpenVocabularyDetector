@@ -25,7 +25,6 @@ YOLOE-26) fix this limit inside the model, so it is left at the Ultralytics defa
 
 | Component | Description |
 | --------- | ----------- |
-| [detector.py](./detector.py) | `UltralyticsDetector`: shared prediction and prompt activation logic. |
-| [yolo_world.py](./yolo_world.py) | `YoloWorldDetector`. |
-| [yolo_e.py](./yolo_e.py) | `YoloEDetector`, including visual prompt embedding. |
+| [core.py](./core.py) | `UltralyticsDetector`: shared prediction and prompt activation logic. |
+| [detector/](./detector/README.md) | `YoloWorldDetector` and `YoloEDetector`. |
 | [installation.py](./installation.py) | Fails fast with an installation hint when Ultralytics is missing. |

@@ -1,7 +1,6 @@
 from . import installation as installation
-from .detector import UltralyticsDetector
-from .yolo_e import YoloEDetector
-from .yolo_world import YoloWorldDetector
+from .core import UltralyticsDetector
+from .detector import YoloEDetector, YoloWorldDetector
 
 __all__ = [
     "UltralyticsDetector",

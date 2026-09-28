@@ -35,9 +35,12 @@ def test_preset_matches_settings_schema(path: Path) -> None:
 
 
 def test_backend_capabilities() -> None:
+    text_and_visual: frozenset[PromptKind] = frozenset({PromptKind.TEXT, PromptKind.VISUAL})
     assert DetectorBackend.GROUNDING_DINO.supported_prompt_kinds == frozenset({PromptKind.TEXT})
-    assert DetectorBackend.OWL_VIT.supported_prompt_kinds == frozenset({PromptKind.TEXT, PromptKind.VISUAL})
-    assert DetectorBackend.YOLOE.supported_prompt_kinds == frozenset({PromptKind.TEXT, PromptKind.VISUAL})
+    assert DetectorBackend.OWL_VIT.supported_prompt_kinds == text_and_visual
+    assert DetectorBackend.OMDET_TURBO.supported_prompt_kinds == frozenset({PromptKind.TEXT})
+    assert DetectorBackend.FLORENCE2.supported_prompt_kinds == frozenset({PromptKind.TEXT})
+    assert DetectorBackend.YOLOE.supported_prompt_kinds == text_and_visual
     assert DetectorBackend.YOLO_WORLD.supported_prompt_kinds == frozenset({PromptKind.TEXT})
 
 

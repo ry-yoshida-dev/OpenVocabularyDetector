@@ -2,9 +2,9 @@ import torch
 from torchvision.ops import box_convert, box_iou, generalized_box_iou
 
 
-class OwlViTBoxQuerySelector:
+class OwlBoxQuerySelector:
     """
-    Picks the patch embedding that represents a box of a reference image (image-guided OWL-ViT).
+    Picks the patch embedding that represents a box of a reference image (image-guided OWL-ViT and OWLv2).
 
     Follows the Hugging Face ``embed_image_query`` heuristic for an arbitrary target box instead of the
     whole image: patches whose predicted box overlaps the target by at least ``RELATIVE_IOU_THRESHOLD``

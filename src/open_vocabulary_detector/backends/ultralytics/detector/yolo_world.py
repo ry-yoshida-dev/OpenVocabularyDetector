@@ -3,10 +3,10 @@ from typing import ClassVar
 from ultralytics.engine.model import Model
 from ultralytics.models.yolo.model import YOLOWorld
 
-from ...options import DetectorBackend
-from ...prompt import Prompt
-from ...settings import DetectorSettings
-from .detector import UltralyticsDetector
+from ....options import DetectorBackend
+from ....prompt import Prompt
+from ....settings import DetectorSettings
+from ..core import UltralyticsDetector
 
 
 class YoloWorldDetector(UltralyticsDetector):

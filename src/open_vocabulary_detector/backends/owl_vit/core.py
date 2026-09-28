@@ -1,9 +1,18 @@
+from abc import abstractmethod
 from collections.abc import Sequence
 from typing import ClassVar, cast
 
 import torch
 from PIL import Image
-from transformers import BatchEncoding, OwlViTForObjectDetection, OwlViTProcessor
+from transformers import (
+    BatchEncoding,
+    Owlv2ForObjectDetection,
+    Owlv2Model,
+    Owlv2Processor,
+    OwlViTForObjectDetection,
+    OwlViTModel,
+    OwlViTProcessor,
+)
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 from ...cache import QueryEmbeddingStore
@@ -13,19 +22,27 @@ from ...prompt import Prompt, VisualReference
 from ...result import DetectionResult, ImageSize
 from ...runtime import QueryPrediction, TorchRuntime
 from ...settings import DetectorSettings
-from .box_query_selector import OwlViTBoxQuerySelector
+from .box_query_selector import OwlBoxQuerySelector
+from .image_fitting import ImageFitting
 
 
-class OwlViTDetector(OpenVocabularyDetector):
+class OwlDetector[
+    ModelT: OwlViTForObjectDetection | Owlv2ForObjectDetection,
+    ProcessorT: OwlViTProcessor | Owlv2Processor,
+](OpenVocabularyDetector):
     """
-    OWL-ViT detector backed by Hugging Face ``transformers``.
+    Base of OWL-ViT and OWLv2 detectors backed by Hugging Face ``transformers``.
 
     Text queries are embedded by the text encoder; visual queries by the patch embeddings that represent their
     reference boxes (image-guided detection), averaged per query. Both kinds may be mixed in one prompt, even
     within one class. Text embeddings are cached per phrase and reference embeddings per reference.
+
+    Both versions share their heads and the ``OWL_VIT`` backend; subclasses choose the model and processor, expose
+    the text encoder and set ``IMAGE_FITTING``, since OWLv2 pads images to a square before resizing them.
     """
 
     BACKEND: ClassVar[DetectorBackend] = DetectorBackend.OWL_VIT
+    IMAGE_FITTING: ClassVar[ImageFitting]
 
     def __init__(self, settings: DetectorSettings) -> None:
         """
@@ -34,23 +51,66 @@ class OwlViTDetector(OpenVocabularyDetector):
         Parameters
         ----------
         settings : DetectorSettings
-            OWL-ViT checkpoint, batching, device and thresholds.
+            Checkpoint, batching, device and thresholds.
         """
         super().__init__(settings)
         self._runtime: TorchRuntime = TorchRuntime(settings)
-        self._processor: OwlViTProcessor = OwlViTProcessor.from_pretrained(settings.weights_path)
-        self._model: OwlViTForObjectDetection = OwlViTForObjectDetection.from_pretrained(settings.weights_path)
+        self._processor: ProcessorT = self._load_processor(settings.weights_path)
+        self._model: ModelT = self._load_model(settings.weights_path)
         self._runtime.prepare_model(self._model)
-        self._text_token_limit: int = self._model.owlvit.text_model.embeddings.position_embedding.num_embeddings
+        self._text_token_limit: int = self._text_encoder().text_model.embeddings.position_embedding.num_embeddings
         self._query_embeddings: QueryEmbeddingStore = QueryEmbeddingStore(
             embed_texts=self._embed_texts, embed_references=self._embed_references
         )
+
+    @abstractmethod
+    def _load_processor(self, weights_path: str) -> ProcessorT:
+        """
+        Load the processor of the checkpoint.
+
+        Parameters
+        ----------
+        weights_path : str
+            Hugging Face Hub model id or local checkpoint directory.
+
+        Returns
+        -------
+        ProcessorT
+            Loaded processor.
+        """
+
+    @abstractmethod
+    def _load_model(self, weights_path: str) -> ModelT:
+        """
+        Load the detection model of the checkpoint.
+
+        Parameters
+        ----------
+        weights_path : str
+            Hugging Face Hub model id or local checkpoint directory.
+
+        Returns
+        -------
+        ModelT
+            Loaded model.
+        """
+
+    @abstractmethod
+    def _text_encoder(self) -> OwlViTModel | Owlv2Model:
+        """
+        CLIP backbone of the loaded model, whose text tower embeds text queries.
+
+        Returns
+        -------
+        OwlViTModel | Owlv2Model
+            Backbone of ``_model``.
+        """
 
     def _detect_mini_batch(self, images: Sequence[Image.Image], prompt: Prompt) -> list[DetectionResult]:
         feature_map, patch_features = self._extract_patch_features(images)
         query_embeddings: torch.Tensor = self._query_embeddings.embed(prompt).to(patch_features)
         with torch.inference_mode():
-            normalized_cxcywh: torch.Tensor = self._model.box_predictor(
+            input_cxcywh: torch.Tensor = self._model.box_predictor(
                 self._typed_as_float_tensor(patch_features), self._typed_as_float_tensor(feature_map)
             )
             class_outputs = self._model.class_predictor(
@@ -60,10 +120,11 @@ class OwlViTDetector(OpenVocabularyDetector):
             )
         logits: torch.Tensor = class_outputs[0]
         prediction: QueryPrediction = QueryPrediction.from_probabilities(logits.float().sigmoid())
+        image_sizes: list[ImageSize] = [ImageSize.from_image(image) for image in images]
         return self._postprocess(
-            raw_detections=prediction.to_raw_detections(normalized_cxcywh),
+            raw_detections=prediction.to_raw_detections(self.IMAGE_FITTING.boxes_to_image(input_cxcywh, image_sizes)),
             prompt=prompt,
-            image_sizes=[ImageSize.from_image(image) for image in images],
+            image_sizes=image_sizes,
         )
 
     def _embed_texts(self, text_queries: Sequence[str]) -> list[torch.Tensor]:
@@ -81,7 +142,7 @@ class OwlViTDetector(OpenVocabularyDetector):
         with torch.inference_mode():
             text_outputs: object = cast(
                 object,
-                self._model.owlvit.get_text_features(
+                self._text_encoder().get_text_features(
                     input_ids=input_ids.to(self._runtime.device),
                     attention_mask=encoding["attention_mask"].to(self._runtime.device),
                 ),
@@ -103,8 +164,10 @@ class OwlViTDetector(OpenVocabularyDetector):
             predicted_cxcywh: torch.Tensor = self._model.box_predictor(
                 self._typed_as_float_tensor(patch_features), self._typed_as_float_tensor(feature_map)
             )
-        return OwlViTBoxQuerySelector.select(
-            target_xyxy=torch.from_numpy(reference.normalized_xyxy),
+        return OwlBoxQuerySelector.select(
+            target_xyxy=self.IMAGE_FITTING.boxes_to_input(
+                torch.from_numpy(reference.normalized_xyxy), ImageSize.from_image(reference.image)
+            ),
             predicted_cxcywh=predicted_cxcywh[0],
             class_embeddings=class_outputs[1][0],
         )

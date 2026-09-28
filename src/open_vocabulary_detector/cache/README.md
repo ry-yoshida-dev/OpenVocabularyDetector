@@ -2,7 +2,7 @@
 
 ## Overview
 
-Query embeddings of OWL-ViT and YOLOE, cached at the granularity they depend on. A text embedding depends only on
+Query embeddings of OWL-ViT, OWLv2 and YOLOE, cached at the granularity they depend on. A text embedding depends only on
 its text query and a visual embedding only on its reference, so each is computed once per text query or reference;
 `QueryEmbeddingStore` assembles the per-query embeddings of a prompt from these caches: text embeddings are kept in a
 `dict`, reference embeddings in a `WeakKeyDictionary` so they are dropped together with their reference.

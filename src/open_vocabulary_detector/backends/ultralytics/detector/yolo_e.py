@@ -7,11 +7,11 @@ from ultralytics.engine.model import Model
 from ultralytics.models.yolo.model import YOLOE
 from ultralytics.models.yolo.yoloe import YOLOEVPDetectPredictor
 
-from ...cache import QueryEmbeddingStore
-from ...options import DetectorBackend
-from ...prompt import Prompt, VisualReference
-from ...settings import DetectorSettings
-from .detector import UltralyticsDetector
+from ....cache import QueryEmbeddingStore
+from ....options import DetectorBackend
+from ....prompt import Prompt, VisualReference
+from ....settings import DetectorSettings
+from ..core import UltralyticsDetector
 
 
 class YoloEDetector(UltralyticsDetector):

@@ -2,8 +2,8 @@
 
 ## Overview
 
-`open_vocabulary_detector` puts Grounding DINO, OWL-ViT, YOLO-World and YOLOE behind one interface so that models can
-be swapped and compared by changing configuration only. Application code builds a prompt, calls one
+`open_vocabulary_detector` puts Grounding DINO, MM-Grounding-DINO (and LLMDet), OWL-ViT, OWLv2, OmDet-Turbo, Florence-2,
+YOLO-World and YOLOE behind one interface so that models can be swapped and compared by changing configuration only. Application code builds a prompt, calls one
 `OpenVocabularyDetector`, and reads one `DetectionResult` type; which model runs is decided by a `DetectorSettings`,
 normally built from a YAML preset.
 
@@ -20,22 +20,31 @@ normally built from a YAML preset.
   XYXY pixels), confidences are in `[0, 1]`, and every backend applies the confidence threshold, optional class-wise
   NMS and sorting in the same way.
 
-| Query | Input | Grounding DINO | OWL-ViT | YOLO-World | YOLOE |
-| ----- | ----- | :------------: | :-----: | :--------: | :---: |
-| `TextQuery` | Text phrase | yes | yes | yes | yes |
-| `VisualQuery` | Reference images with boxes, averaged into one query | - | yes | - | yes |
+| Query | Input | `grounding_dino` | `owl_vit` | `omdet_turbo` | `florence2` | `yolo_world` | `yoloe` |
+| ----- | ----- | :--------------: | :-------: | :-----------: | :---------: | :----------: | :-----: |
+| `TextQuery` | Text phrase | yes | yes | yes | yes | yes | yes |
+| `VisualQuery` | Reference images with boxes, averaged into one query | - | yes | - | - | - | yes |
 
-OWL-ViT and YOLOE accept both kinds mixed in one prompt, even within one class.
+OWL-ViT, OWLv2 and YOLOE accept both kinds mixed in one prompt, even within one class.
 
-| Backend | Library | Presets |
-| ------- | ------- | ------- |
-| `grounding_dino` | Hugging Face `transformers` | `tiny`, `base` |
-| `owl_vit` | Hugging Face `transformers` | `base_patch32`, `base_patch16`, `large_patch14` |
-| `yolo_world` | Ultralytics (optional, AGPL-3.0) | `s`, `m`, `l`, `x` |
-| `yoloe` | Ultralytics (optional, AGPL-3.0) | `26n` ... `26x`, `11s` ... `11l`, `v8s` ... `v8l` |
+| Backend | Models | Library | Presets |
+| ------- | ------ | ------- | ------- |
+| `grounding_dino` | Grounding DINO, MM-Grounding-DINO, LLMDet | Hugging Face `transformers` | `original_tiny`, `original_base`, `mm_*`, `llmdet_tiny` ... `llmdet_large` |
+| `owl_vit` | OWL-ViT, OWLv2 | Hugging Face `transformers` | `v1_base_patch32`, `v1_base_patch16`, `v1_large_patch14`, `v2_base_patch16[_ensemble]`, `v2_large_patch14[_ensemble]` |
+| `omdet_turbo` | OmDet-Turbo | Hugging Face `transformers` + `timm` (optional) | `swin_tiny` |
+| `florence2` | Florence-2 | Hugging Face `transformers` | `base`, `base_ft`, `large`, `large_ft` |
+| `yolo_world` | YOLO-World | Ultralytics (optional, AGPL-3.0) | `s`, `m`, `l`, `x` |
+| `yoloe` | YOLOE | Ultralytics (optional, AGPL-3.0) | `26n` ... `26x`, `11s` ... `11l`, `v8s` ... `v8l` |
 
-Images are processed in mini-batches. OWL-ViT and YOLOE cache query embeddings per text query and per visual
+A backend groups the models that share one implementation; for `grounding_dino` and `owl_vit`, the `model_type` in
+the checkpoint's `config.json` selects the architecture, so `weights_path` alone decides between them.
+
+Images are processed in mini-batches. OWL-ViT, OWLv2 and YOLOE cache query embeddings per text query and per visual
 reference, so prompts that share queries do not recompute them. Weights are downloaded on first use.
+
+Florence-2 is a generative model without scores: it runs once per text query, every box has confidence `1.0`, so
+the confidence threshold removes nothing, and it tends to return a box even for a phrase that is not in the image.
+Each query is a beam search of up to 1024 tokens, so inference time grows linearly with the number of queries.
 
 For module details, see [src/open_vocabulary_detector/README.md](src/open_vocabulary_detector/README.md).
 
@@ -45,9 +54,14 @@ For module details, see [src/open_vocabulary_detector/README.md](src/open_vocabu
 pip install -e .
 ```
 
-Grounding DINO and OWL-ViT need only the core dependencies. YOLO-World and YOLOE are backed by Ultralytics, which is
-licensed under AGPL-3.0 and is therefore an optional extra; install it only when its license terms are acceptable for
-your use:
+The `transformers` backends need only the core dependencies, except OmDet-Turbo, whose vision backbone needs `timm`:
+
+```bash
+pip install -e ".[omdet-turbo]"
+```
+
+YOLO-World and YOLOE are backed by Ultralytics, which is licensed under AGPL-3.0 and is therefore an optional extra;
+install it only when its license terms are acceptable for your use:
 
 ```bash
 pip install -e ".[ultralytics]"
@@ -93,7 +107,7 @@ for detection in detector.detect(image, prompt):
     print(detection.class_name, detection.matched_query, detection.confidence)
 ```
 
-Text and reference images for one class (OWL-ViT or YOLOE). The reference images of one `VisualQuery` are averaged
+Text and reference images for one class (OWL-ViT, OWLv2 or YOLOE). The reference images of one `VisualQuery` are averaged
 into one query, so group photos of the same appearance and give different appearances separate queries.
 
 ```python

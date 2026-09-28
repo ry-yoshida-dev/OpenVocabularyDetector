@@ -4,8 +4,11 @@ import sys
 BACKEND_MODULES: tuple[str, ...] = (
     "transformers",
     "ultralytics",
+    "timm",
     "open_vocabulary_detector.backends.grounding_dino",
     "open_vocabulary_detector.backends.owl_vit",
+    "open_vocabulary_detector.backends.omdet_turbo",
+    "open_vocabulary_detector.backends.florence2",
 )
 
 

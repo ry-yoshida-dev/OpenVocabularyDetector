@@ -13,9 +13,14 @@ class DetectorBackend(StrEnum):
     Attributes
     ----------
     GROUNDING_DINO : str
-        Grounding DINO through Hugging Face ``transformers``.
+        Grounding DINO or MM-Grounding-DINO (also LLMDet weights) through Hugging Face ``transformers``;
+        the checkpoint decides which.
     OWL_VIT : str
-        OWL-ViT (v1) through Hugging Face ``transformers``.
+        OWL-ViT or OWLv2 through Hugging Face ``transformers``; the checkpoint decides which.
+    OMDET_TURBO : str
+        OmDet-Turbo through Hugging Face ``transformers``.
+    FLORENCE2 : str
+        Florence-2 open-vocabulary detection through Hugging Face ``transformers``.
     YOLO_WORLD : str
         YOLO-World through Ultralytics.
     YOLOE : str
@@ -24,6 +29,8 @@ class DetectorBackend(StrEnum):
 
     GROUNDING_DINO = "grounding_dino"
     OWL_VIT = "owl_vit"
+    OMDET_TURBO = "omdet_turbo"
+    FLORENCE2 = "florence2"
     YOLO_WORLD = "yolo_world"
     YOLOE = "yoloe"
 
@@ -40,5 +47,10 @@ class DetectorBackend(StrEnum):
         match self:
             case DetectorBackend.OWL_VIT | DetectorBackend.YOLOE:
                 return frozenset({PromptKind.TEXT, PromptKind.VISUAL})
-            case DetectorBackend.GROUNDING_DINO | DetectorBackend.YOLO_WORLD:
+            case (
+                DetectorBackend.GROUNDING_DINO
+                | DetectorBackend.OMDET_TURBO
+                | DetectorBackend.FLORENCE2
+                | DetectorBackend.YOLO_WORLD
+            ):
                 return frozenset({PromptKind.TEXT})
