@@ -45,6 +45,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.mypy]
+files = ["src", "tests"]
 strict = true
 mypy_path = "src"
 untyped_calls_exclude = ["ultralytics", "transformers.modeling_utils"]
@@ -54,7 +55,7 @@ module = ["torchvision.*"]
 ignore_missing_imports = true
 
 [tool.pyright]
-include = ["src"]
+include = ["src", "tests"]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
 reportMissingTypeStubs = false

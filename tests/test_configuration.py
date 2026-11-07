@@ -1,5 +1,6 @@
 from dataclasses import fields
 from pathlib import Path
+from typing import cast
 
 import pytest
 import yaml
@@ -13,9 +14,12 @@ PRESET_DIRECTORY: Path = Path(open_vocabulary_detector.__file__).parent / "confi
 def load_preset_section(path: Path) -> dict[str, object]:
     document: object = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert isinstance(document, dict)
-    section: object = document["detector"]
+    # YAML mappings are untyped, so give the keys and values the widest type.
+    typed_document: dict[object, object] = cast(dict[object, object], document)
+    section: object = typed_document["detector"]
     assert isinstance(section, dict)
-    return {str(key): value for key, value in section.items()}
+    typed_section: dict[object, object] = cast(dict[object, object], section)
+    return {str(key): value for key, value in typed_section.items()}
 
 
 def test_every_backend_has_presets() -> None:
@@ -31,7 +35,8 @@ def test_preset_matches_settings_schema(path: Path) -> None:
     assert section["device"] in {device.value for device in Device}
     thresholds: object = section["thresholds"]
     assert isinstance(thresholds, dict)
-    assert set(thresholds) == {field.name for field in fields(DetectionThresholds)}
+    typed_thresholds: dict[object, object] = cast(dict[object, object], thresholds)
+    assert set(typed_thresholds) == {field.name for field in fields(DetectionThresholds)}
 
 
 def test_backend_capabilities() -> None:

@@ -76,7 +76,8 @@ def test_unused_references_are_released() -> None:
     store.embed(Prompt({"my mug": (VisualQuery((build_reference([[0.0, 0.0, 5.0, 5.0]]),)),)}))
     embedder.embedded_references.clear()
     gc.collect()
-    assert len(store._references.entries) == 0
+    # Releasing is only observable on the private cache, because the released reference cannot be queried again.
+    assert len(store._references.entries) == 0  # pyright: ignore[reportPrivateUsage]
 
 
 def test_text_and_visual_queries_keep_query_order() -> None:
