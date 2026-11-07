@@ -6,6 +6,7 @@ Usage
 python examples/detect_directory.py IMAGE_DIR --backend yoloe --weights yoloe-26s-seg.pt --classes person bus
 
 A class written as ``name:query,query`` (e.g. ``car:car,suv,taxi``) is queried by each phrase and reported as ``name``.
+A class given in several arguments collects the queries of every one.
 """
 
 import argparse

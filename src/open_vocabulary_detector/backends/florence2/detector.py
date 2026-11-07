@@ -27,7 +27,11 @@ class Florence2Detector(OpenVocabularyDetector):
     by every query; each query is tokenized like the processor does, with the image placeholder tokens the model
     replaces by image features. The model gives no score, so every box has the
     confidence ``DETECTION_CONFIDENCE``; the confidence threshold keeps every box and NMS keeps the first of equally
-    confident overlapping boxes, in query order.
+    confident overlapping boxes, in query order. A phrase absent from the image usually still gets a box.
+
+    Each text query is a separate beam search of ``BEAM_COUNT`` beams and up to ``MAX_NEW_TOKENS`` tokens, so
+    inference time grows linearly with the number of queries. Keep prompts short, or prefer a detector that scores
+    every query in one pass when a prompt has many queries.
     """
 
     BACKEND: ClassVar[DetectorBackend] = DetectorBackend.FLORENCE2

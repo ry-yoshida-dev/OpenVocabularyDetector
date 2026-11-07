@@ -2,19 +2,7 @@
 
 ## Overview
 
-Concrete `OpenVocabularyDetector` implementations. Every detector takes the common `DetectorSettings`, declares the
-`DetectorBackend` it serves, turns a prompt into its model-specific encoding, and runs its model through a
-`TorchRuntime`. Model outputs are handed to the shared post-processing of `OpenVocabularyDetector`, so thresholding,
-NMS and sorting behave identically across backends.
-
-Each backend package keeps its shared base class in `core.py` and the concrete detectors in `detector/`. A backend
-groups the models sharing one implementation: `grounding_dino` and `owl_vit` choose their detector from the
-`model_type` of the checkpoint (`CheckpointConfig`), so `weights_path` alone decides the architecture.
-
-Nothing is imported eagerly: `DetectorSettings.build()` imports only the sub-package of the requested backend, so
-importing `open_vocabulary_detector` loads neither `transformers` models nor Ultralytics. Import a detector class
-directly from its sub-package (e.g. `backends.grounding_dino`) when needed. OmDet-Turbo needs the optional
-`omdet-turbo` extra (`timm`) and the Ultralytics detectors the optional `ultralytics` extra.
+Concrete `OpenVocabularyDetector` implementations, one sub-package per `DetectorBackend`. `DetectorSettings.build()` imports only the sub-package of the requested backend, so importing `open_vocabulary_detector` loads neither `transformers` models nor Ultralytics.
 
 ## Components
 

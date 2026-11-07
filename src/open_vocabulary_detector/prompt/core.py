@@ -23,7 +23,8 @@ class Prompt:
         })
 
     The model scores every query, each box keeps its best one, and the detection is reported under the class of
-    that query, together with the query itself.
+    that query, together with the query itself. Text and visual scores come from different distributions, so
+    check the confidence threshold on real data when mixing them.
 
     Attributes
     ----------

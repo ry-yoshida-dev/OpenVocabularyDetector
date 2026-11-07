@@ -2,12 +2,11 @@
 
 ## Overview
 
-Concrete Grounding DINO family detectors. Each only loads its model architecture; everything else comes from
-`GroundingDetector` in [core.py](../core.py).
+Concrete Grounding DINO family detectors, each loading one model architecture.
 
 ## Components
 
 | Component | Description |
 | --------- | ----------- |
-| [original.py](./original.py) | `GroundingDinoDetector`: `GroundingDinoForObjectDetection`. |
-| [mm.py](./mm.py) | `MMGroundingDinoDetector`: MM-Grounding-DINO and LLMDet through `MMGroundingDinoWithSeparateBoxHeads`. |
+| [original.py](./original.py) | `GroundingDinoDetector`, Grounding DINO. |
+| [mm.py](./mm.py) | `MMGroundingDinoDetector`, MM-Grounding-DINO and LLMDet. |

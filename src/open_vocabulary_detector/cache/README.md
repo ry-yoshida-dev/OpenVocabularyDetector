@@ -2,17 +2,14 @@
 
 ## Overview
 
-Query embeddings of OWL-ViT, OWLv2 and YOLOE, cached at the granularity they depend on. A text embedding depends only on
-its text query and a visual embedding only on its reference, so each is computed once per text query or reference;
-`QueryEmbeddingStore` assembles the per-query embeddings of a prompt from these caches: text embeddings are kept in a
-`dict`, reference embeddings in a `WeakKeyDictionary` so they are dropped together with their reference.
+Query embeddings of OWL-ViT, OWLv2 and YOLOE, cached per text query and per visual reference, so prompts that share queries do not recompute them.
 
 ## Components
 
 | Component | Description |
 | --------- | ----------- |
-| [core.py](./core.py) | `EmbeddingCache`: computes missing keys in one call, stores values in a given mapping and returns them in key order. |
-| [store.py](./store.py) | `QueryEmbeddingStore`: per-query embeddings of a prompt with text queries, visual queries or both, in query-id order; averages the reference boxes of each visual query. |
+| [core.py](./core.py) | `EmbeddingCache`, embeddings computed per key and kept for later prompts. |
+| [store.py](./store.py) | `QueryEmbeddingStore`, which assembles the query embeddings of a prompt from the caches. |
 
 ## Examples
 

@@ -2,22 +2,15 @@
 
 ## Overview
 
-What to detect. A `Prompt` maps each output class name (class id = key order) to the queries the model scores for
-it. A class may be queried by several text phrases, several visual queries, or both at once, e.g. `"car"` by
-`"car"`, `"suv"` and photos of a van. The model scores every query, each box keeps its best one, and the detection
-is reported under the class of that query together with the query itself (`Detection.matched_query`).
-
-A detector accepts a prompt when `DetectorBackend.supported_prompt_kinds` covers every query kind it uses
-(`Prompt.kinds`): text only for Grounding DINO, OmDet-Turbo, Florence-2 and YOLO-World, text and visual (also mixed)
-for OWL-ViT, OWLv2 and YOLOE.
+What to detect. A `Prompt` maps each output class name to the queries the model scores for it: several text phrases, visual queries, or both, e.g. `"car"` by `"car"`, `"suv"` and photos of a van. Each detection reports its class and the query that matched.
 
 ## Components
 
 | Component | Description |
 | --------- | ----------- |
-| [core.py](./core.py) | `Prompt`: class names, queries in query-id order and the class of each query, with validation. |
+| [core.py](./core.py) | `Prompt`, the classes to detect and their queries. |
 | [kind.py](./kind.py) | `PromptKind`: `TEXT` or `VISUAL` query. |
-| [visual_reference.py](./visual_reference.py) | `VisualReference`: reference image with XYXY boxes, compared by identity. |
+| [visual_reference.py](./visual_reference.py) | `VisualReference`, a reference image with XYXY boxes. |
 | [queries/](./queries/README.md) | Query types: `TextQuery`, `VisualQuery` and their alias `PromptQuery`. |
 
 ## Examples

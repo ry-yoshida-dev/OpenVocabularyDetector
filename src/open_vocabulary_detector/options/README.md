@@ -2,15 +2,14 @@
 
 ## Overview
 
-Individual options composing `DetectorSettings`, shared by every backend: which detector family runs, where it runs
-and how its output is post-processed.
+Options composing `DetectorSettings`, shared by every backend.
 
 ## Components
 
 | Component | Description |
 | --------- | ----------- |
 | [backend.py](./backend.py) | `DetectorBackend`: detector family and the query kinds it supports. |
-| [device.py](./device.py) | `Device`: `auto`, `cpu`, `cuda` or `mps`; each runtime resolves it to its own device. |
+| [device.py](./device.py) | `Device`: `auto`, `cpu`, `cuda` or `mps`. |
 | [thresholds.py](./thresholds.py) | `DetectionThresholds`: confidence threshold and optional NMS IoU threshold. |
 
 ## Examples

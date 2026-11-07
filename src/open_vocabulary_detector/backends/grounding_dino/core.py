@@ -30,7 +30,9 @@ class GroundingDetector[ModelT: GroundingDinoForObjectDetection | MMGroundingDin
 
     Text queries are joined into a caption (``"car . suv . taxi . dog ."``). Each predicted box is assigned the
     query whose tokens have the highest probability, so queries and their classes map back to the prompt without
-    phrase matching. The caption is tokenized once per prompt and reused while the same prompt is detected.
+    phrase matching. The caption is tokenized once per prompt and reused while the same prompt is detected, and
+    must fit in the model's ``max_text_len`` tokens. Text features cannot be cached per query, because Grounding
+    DINO fuses text and image early.
     Subclasses only choose the model architecture; the processor, caption handling and the ``GROUNDING_DINO``
     backend are shared.
     """
